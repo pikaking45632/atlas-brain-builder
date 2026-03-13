@@ -1,12 +1,27 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { AnimatePresence } from "framer-motion";
+import { useOnboarding } from "@/store/onboarding";
+import StepWelcome from "@/components/atlas/StepWelcome";
+import StepCompany from "@/components/atlas/StepCompany";
+import StepWorkplace from "@/components/atlas/StepWorkplace";
+import StepModules from "@/components/atlas/StepModules";
+import StepReview from "@/components/atlas/StepReview";
+import StepPreparing from "@/components/atlas/StepPreparing";
+import Dashboard from "@/components/atlas/Dashboard";
 
 const Index = () => {
+  const { step } = useOnboarding();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <AnimatePresence mode="wait">
+        {step === 1 && <StepWelcome key="welcome" />}
+        {step === 2 && <StepCompany key="company" />}
+        {step === 3 && <StepWorkplace key="workplace" />}
+        {step === 4 && <StepModules key="modules" />}
+        {step === 5 && <StepReview key="review" />}
+        {step === 6 && <StepPreparing key="preparing" />}
+        {step === 7 && <Dashboard key="dashboard" />}
+      </AnimatePresence>
     </div>
   );
 };
