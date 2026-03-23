@@ -14,7 +14,126 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      connected_sources: {
+        Row: {
+          connected_at: string
+          id: string
+          source_name: string
+          user_id: string
+        }
+        Insert: {
+          connected_at?: string
+          id?: string
+          source_name: string
+          user_id: string
+        }
+        Update: {
+          connected_at?: string
+          id?: string
+          source_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          company_name: string
+          created_at: string
+          email_domain: string
+          expires_at: string | null
+          id: string
+          invite_code: string
+          invited_by: string
+          max_uses: number | null
+          uses: number | null
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email_domain: string
+          expires_at?: string | null
+          id?: string
+          invite_code?: string
+          invited_by: string
+          max_uses?: number | null
+          uses?: number | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email_domain?: string
+          expires_at?: string | null
+          id?: string
+          invite_code?: string
+          invited_by?: string
+          max_uses?: number | null
+          uses?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email_domain: string | null
+          id: string
+          invite_code: string | null
+          job_title: string | null
+          key_activities: string | null
+          user_id: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email_domain?: string | null
+          id?: string
+          invite_code?: string | null
+          job_title?: string | null
+          key_activities?: string | null
+          user_id: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email_domain?: string | null
+          id?: string
+          invite_code?: string | null
+          job_title?: string | null
+          key_activities?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
