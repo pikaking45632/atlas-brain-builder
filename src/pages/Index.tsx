@@ -7,6 +7,10 @@ import StepModules from "@/components/atlas/StepModules";
 import StepReview from "@/components/atlas/StepReview";
 import StepPreparing from "@/components/atlas/StepPreparing";
 import Dashboard from "@/components/atlas/Dashboard";
+import UploadDocuments from "@/components/atlas/UploadDocuments";
+import InviteColleagues from "@/components/atlas/InviteColleagues";
+import ConnectSources from "@/components/atlas/ConnectSources";
+import ThemedDashboard from "@/components/atlas/ThemedDashboard";
 
 const Index = () => {
   const { step } = useOnboarding();
@@ -21,6 +25,10 @@ const Index = () => {
         {step === 5 && <StepReview key="review" />}
         {step === 6 && <StepPreparing key="preparing" />}
         {step === 7 && <Dashboard key="dashboard" />}
+        {step === 8 && <UploadDocuments key="upload" />}
+        {step === 9 && <InviteColleagues key="invite" />}
+        {step === 10 && <ConnectSources key="sources" />}
+        {step === 11 && <ThemedDashboard key="themed-dashboard" />}
       </AnimatePresence>
     </div>
   );
