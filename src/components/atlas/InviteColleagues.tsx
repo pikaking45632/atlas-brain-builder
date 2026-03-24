@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Users, Copy, CheckCircle2, ArrowLeft, Link2, Share2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { getBackendClient } from "@/lib/backend";
 
 const InviteColleagues = () => {
   const { companyName, setStep } = useOnboarding();
@@ -17,14 +17,20 @@ const InviteColleagues = () => {
 
   useEffect(() => {
     const generateInvite = async () => {
+      const client = getBackendClient();
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        if (!client) {
+          setInviteLink("Backend unavailable in this preview");
+          return;
+        }
+
+        const { data: { user } } = await client.auth.getUser();
         if (!user?.email) return;
 
         const emailDomain = user.email.split("@")[1];
 
-        // Check for existing invite
-        const { data: existing } = await supabase
+        const { data: existing } = await client
           .from("invitations")
           .select("invite_code")
           .eq("invited_by", user.id)
@@ -34,7 +40,7 @@ const InviteColleagues = () => {
         if (existing) {
           setInviteLink(`${window.location.origin}/join/${existing.invite_code}`);
         } else {
-          const { data: newInvite, error } = await supabase
+          const { data: newInvite, error } = await client
             .from("invitations")
             .insert({
               invited_by: user.id,

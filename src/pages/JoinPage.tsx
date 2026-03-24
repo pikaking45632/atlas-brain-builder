@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import { Shield, ArrowRight, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { getBackendClient } from "@/lib/backend";
 
 const JoinPage = () => {
   const { code } = useParams<{ code: string }>();
@@ -25,9 +25,21 @@ const JoinPage = () => {
 
   useEffect(() => {
     const fetchInvite = async () => {
-      if (!code) { setError("Invalid invite link."); setLoading(false); return; }
+      const client = getBackendClient();
 
-      const { data, error: fetchError } = await supabase
+      if (!code) {
+        setError("Invalid invite link.");
+        setLoading(false);
+        return;
+      }
+
+      if (!client) {
+        setError("Backend is unavailable in this preview.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error: fetchError } = await client
         .from("invitations")
         .select("company_name, email_domain, uses, max_uses, expires_at")
         .eq("invite_code", code)
@@ -37,7 +49,7 @@ const JoinPage = () => {
         setError("This invite link is invalid or has expired.");
       } else if (data.uses >= (data.max_uses || 50)) {
         setError("This invite link has reached its maximum uses.");
-      } else if (new Date(data.expires_at) < new Date()) {
+      } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
         setError("This invite link has expired.");
       } else {
         setInvite({ company_name: data.company_name, email_domain: data.email_domain });
@@ -50,11 +62,13 @@ const JoinPage = () => {
   const emailDomainMatches = invite && email.includes("@") && email.split("@")[1] === invite.email_domain;
 
   const handleSignUp = async () => {
-    if (!emailDomainMatches || password.length < 6 || !jobTitle.trim()) return;
+    const client = getBackendClient();
+
+    if (!client || !emailDomainMatches || password.length < 6 || !jobTitle.trim()) return;
     setSubmitting(true);
 
     try {
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      const { data: authData, error: signUpError } = await client.auth.signUp({
         email,
         password,
         options: { emailRedirectTo: window.location.origin },
@@ -63,7 +77,7 @@ const JoinPage = () => {
       if (signUpError) throw signUpError;
 
       if (authData.user) {
-        await supabase.from("profiles").insert({
+        await client.from("profiles").insert({
           user_id: authData.user.id,
           company_name: invite!.company_name,
           job_title: jobTitle,
@@ -72,13 +86,11 @@ const JoinPage = () => {
           invite_code: code,
         });
 
-        // Increment invite uses - update uses count
-        const { data: currentInvite } = await supabase
+        await client
           .from("invitations")
           .select("uses")
           .eq("invite_code", code!)
           .single();
-        // Note: uses increment handled server-side in production
       }
 
       toast({

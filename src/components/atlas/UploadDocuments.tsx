@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, X, CheckCircle2, ArrowLeft, Cloud } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 import { Button } from "@/components/ui/button";
+import { getBackendClient } from "@/lib/backend";
 
 interface UploadedFile {
   name: string;
@@ -19,24 +19,27 @@ const UploadDocuments = () => {
   const [dragActive, setDragActive] = useState(false);
 
   const handleUpload = useCallback(async (fileList: FileList) => {
+    const client = getBackendClient();
     const newFiles = Array.from(fileList);
-    
+
     for (const file of newFiles) {
       const entry: UploadedFile = { name: file.name, size: file.size, status: "uploading" };
       setFiles((prev) => [...prev, entry]);
 
       try {
-        const userId = (await supabase.auth.getUser()).data.user?.id;
+        if (!client) throw new Error("Backend unavailable");
+
+        const userId = (await client.auth.getUser()).data.user?.id;
         if (!userId) throw new Error("Not authenticated");
 
         const filePath = `${userId}/${Date.now()}-${file.name}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await client.storage
           .from("documents")
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        await supabase.from("documents").insert({
+        await client.from("documents").insert({
           user_id: userId,
           file_name: file.name,
           file_path: filePath,
