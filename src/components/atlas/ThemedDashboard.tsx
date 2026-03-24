@@ -131,7 +131,7 @@ const ThemedDashboard = () => {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask Atlas anything..."
-              className="w-full h-13 pl-5 pr-14 rounded-full border border-border bg-card text-foreground text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all placeholder:text-muted-foreground"
+              className="w-full h-[52px] pl-5 pr-14 rounded-full border border-border bg-card text-foreground text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all placeholder:text-muted-foreground"
             />
             <button className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground flex items-center justify-center transition-colors text-muted-foreground">
               <Send className="w-4 h-4" />
