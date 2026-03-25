@@ -6,66 +6,66 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 25% 14%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 14%;
-    --card-hover: 220 15% 96%;
+    --card-foreground: 0 0% 7%;
+    --card-hover: 0 0% 97%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 14%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 217 72% 50%;
+    --primary: 220 90% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 217 80% 60%;
+    --primary-glow: 220 100% 64%;
 
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 220 15% 40%;
+    --secondary: 220 10% 95%;
+    --secondary-foreground: 220 10% 35%;
 
-    --muted: 220 14% 94%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 220 10% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 217 72% 50%;
+    --accent: 220 90% 56%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 89%;
-    --input: 220 13% 91%;
-    --ring: 217 72% 50%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 220 90% 56%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
     --surface-elevated: 0 0% 100%;
-    --surface-glass: 220 20% 98%;
-    --text-secondary: 220 10% 45%;
-    --text-tertiary: 220 8% 62%;
+    --surface-glass: 0 0% 98%;
+    --text-secondary: 0 0% 40%;
+    --text-tertiary: 0 0% 58%;
     --success: 152 69% 38%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
-    --module-recommended: 217 72% 50%;
+    --module-recommended: 220 90% 56%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(217 72% 50%), hsl(250 60% 55%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 90% 56%), hsl(270 80% 60%));
     --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 97%));
-    --gradient-glow: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(217 72% 50% / 0.04), transparent 40%);
+    --gradient-glow: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(220 90% 56% / 0.03), transparent 40%);
 
-    --shadow-card: 0 1px 3px hsl(220 20% 80% / 0.25), 0 1px 2px hsl(220 20% 80% / 0.15);
-    --shadow-elevated: 0 4px 16px hsl(220 20% 80% / 0.2), 0 2px 4px hsl(220 20% 80% / 0.1);
-    --shadow-glow: 0 0 20px hsl(217 72% 50% / 0.1);
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.04), 0 1px 3px hsl(0 0% 0% / 0.03);
+    --shadow-elevated: 0 8px 30px hsl(0 0% 0% / 0.08), 0 2px 8px hsl(0 0% 0% / 0.04);
+    --shadow-glow: 0 0 24px hsl(220 90% 56% / 0.12);
 
-    --font-display: 'Plus Jakarta Sans', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 220 25% 14%;
-    --sidebar-primary: 217 72% 50%;
+    --sidebar-foreground: 0 0% 7%;
+    --sidebar-primary: 220 90% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 94%;
-    --sidebar-accent-foreground: 220 25% 14%;
-    --sidebar-border: 220 13% 89%;
-    --sidebar-ring: 217 72% 50%;
+    --sidebar-accent: 220 10% 95%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 220 90% 56%;
   }
 }
 
@@ -77,10 +77,13 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
 }
 
@@ -91,11 +94,33 @@
   }
 
   .glass-surface {
-    @apply backdrop-blur-xl border border-border;
-    background: hsl(var(--surface-glass) / 0.8);
+    @apply backdrop-blur-2xl border border-border/50;
+    background: hsl(var(--surface-glass) / 0.7);
   }
 
   .glow-border {
     box-shadow: var(--shadow-glow);
+  }
+
+  .apple-card {
+    @apply bg-card rounded-2xl border border-border/60;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .apple-card:hover {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .apple-input {
+    @apply w-full bg-muted/50 border-0 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-all duration-200;
+  }
+
+  .apple-btn-primary {
+    @apply bg-foreground text-background font-semibold rounded-full hover:opacity-90 transition-all duration-200;
+  }
+
+  .apple-btn-secondary {
+    @apply bg-transparent border border-border text-foreground font-medium rounded-full hover:bg-muted/50 transition-all duration-200;
   }
 }
