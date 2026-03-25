@@ -25,7 +25,6 @@ const StepModules = () => {
         (m) => m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q)
       );
     }
-    // Sort recommended first
     return [...list].sort((a, b) => {
       const aRec = recommended.includes(a.id) ? 0 : 1;
       const bRec = recommended.includes(b.id) ? 0 : 1;
@@ -38,47 +37,54 @@ const StepModules = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -40 }}
-      className="min-h-screen flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen flex flex-col bg-background"
     >
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
+      <header className="flex items-center justify-between px-8 py-5">
         <AtlasLogo />
         <StepProgress current={4} />
-        <div className="w-20" />
+        <div className="w-16" />
       </header>
 
-      <div className="flex-1 px-4 py-6 max-w-5xl mx-auto w-full space-y-5">
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-display font-bold text-foreground">Design your model</h2>
-          <p className="text-sm text-muted-foreground">
-            Choose the knowledge areas your AI should understand from day one.
+      <div className="flex-1 px-6 py-6 max-w-5xl mx-auto w-full space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="text-center space-y-3"
+        >
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
+            Design your model.
+          </h2>
+          <p className="text-muted-foreground text-[15px]">
+            Choose the knowledge areas your AI should master.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Counter */}
-        <div className="flex items-center justify-center">
-          <div className="bg-card border border-border rounded-full px-5 py-2 text-sm font-medium">
-            <span className={count >= 8 ? "text-primary" : "text-foreground"}>
-              Selected {count}
+        {/* Counter pill */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center gap-3 bg-muted/60 rounded-full px-5 py-2.5 text-sm">
+            <span className={`font-semibold ${count >= 8 ? "text-foreground" : "text-foreground"}`}>
+              {count} selected
             </span>
-            <span className="text-muted-foreground"> of 20</span>
-            {count < 8 && (
-              <span className="text-muted-foreground ml-2">· {8 - count} more needed</span>
-            )}
+            <div className="w-px h-4 bg-border" />
+            <span className="text-muted-foreground">
+              {count < 8 ? `${8 - count} more needed` : "Ready to continue"}
+            </span>
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search + filters */}
         <div className="space-y-3">
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <div className="relative max-w-sm mx-auto">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search modules..."
-              className="w-full h-10 pl-10 pr-4 rounded-xl bg-card border border-border text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/30 transition-all"
+              className="apple-input h-[44px] pl-11 pr-4 rounded-full text-sm"
             />
           </div>
 
@@ -87,10 +93,10 @@ const StepModules = () => {
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                   activeFilter === cat
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    ? "bg-foreground text-background"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {cat}
@@ -115,10 +121,10 @@ const StepModules = () => {
         </motion.div>
 
         {/* Actions */}
-        <div className="flex gap-3 justify-center pt-4 pb-8">
+        <div className="flex gap-3 justify-center pt-4 pb-10">
           <button
             onClick={() => setStep(3)}
-            className="h-11 px-5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-card-hover transition-all flex items-center gap-2"
+            className="apple-btn-secondary h-[48px] px-6 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -126,7 +132,7 @@ const StepModules = () => {
           <button
             onClick={() => canContinue && setStep(5)}
             disabled={!canContinue}
-            className="h-11 px-8 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-primary text-primary-foreground hover:brightness-110"
+            className="apple-btn-primary h-[48px] px-10 text-sm flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Review setup
             <ArrowRight className="w-4 h-4" />

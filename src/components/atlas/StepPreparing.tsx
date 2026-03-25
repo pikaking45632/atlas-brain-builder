@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Brain, Database, Layers, LayoutDashboard, Check } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
@@ -24,31 +24,37 @@ const StepPreparing = () => {
     return () => clearTimeout(t);
   }, [activeIndex, setStep]);
 
+  const progress = Math.min((activeIndex / steps.length) * 100, 100);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen flex flex-col items-center justify-center px-4"
+      className="min-h-screen flex flex-col items-center justify-center px-6 bg-background"
     >
-      <div className="space-y-10 text-center max-w-md">
+      <div className="space-y-12 text-center max-w-md w-full">
         <AtlasLogo size="large" />
 
-        <div>
-          <h2 className="text-2xl font-display font-bold text-foreground mb-2">Building your AI</h2>
-          <p className="text-sm text-muted-foreground">This will only take a moment.</p>
+        <div className="space-y-2">
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
+            Building your AI.
+          </h2>
+          <p className="text-muted-foreground text-[15px]">
+            This will only take a moment.
+          </p>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-primary rounded-full"
+            className="h-full bg-foreground rounded-full"
             initial={{ width: "0%" }}
-            animate={{ width: `${Math.min(((activeIndex) / steps.length) * 100, 100)}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
           />
         </div>
 
-        <div className="space-y-3 text-left">
+        <div className="space-y-2 text-left">
           {steps.map((s, i) => {
             const Icon = s.icon;
             const isDone = i < activeIndex;
@@ -58,26 +64,26 @@ const StepPreparing = () => {
                 key={s.label}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15 }}
-                className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                  isActive ? "bg-card border border-primary/30" : isDone ? "bg-card/50" : "opacity-40"
+                transition={{ delay: i * 0.1 }}
+                className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
+                  isActive ? "bg-muted/60" : isDone ? "" : "opacity-30"
                 }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                  isDone ? "bg-primary/20" : isActive ? "bg-primary" : "bg-secondary"
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                  isDone ? "bg-foreground" : isActive ? "bg-foreground" : "bg-muted"
                 }`}>
                   {isDone ? (
-                    <Check className="w-4 h-4 text-primary" />
+                    <Check className="w-4 h-4 text-background" />
                   ) : (
-                    <Icon className={`w-4 h-4 ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? "text-background" : "text-muted-foreground"}`} />
                   )}
                 </div>
-                <span className={`text-sm font-medium ${isDone || isActive ? "text-foreground" : "text-muted-foreground"}`}>
+                <span className={`text-[15px] font-medium ${isDone || isActive ? "text-foreground" : "text-muted-foreground"}`}>
                   {s.label}
                 </span>
                 {isActive && (
                   <motion.div
-                    className="ml-auto w-4 h-4 border-2 border-primary border-t-transparent rounded-full"
+                    className="ml-auto w-5 h-5 border-2 border-foreground border-t-transparent rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
                   />
