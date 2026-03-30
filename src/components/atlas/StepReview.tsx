@@ -5,18 +5,21 @@ import { modules } from "@/data/modules";
 import StepProgress from "./StepProgress";
 import AtlasLogo from "./AtlasLogo";
 
+const ease = [0.16, 1, 0.3, 1];
+
 const StepReview = () => {
   const { companyName, industry, businessType, goals, selectedModules, setStep } = useOnboarding();
   const selectedList = modules.filter((m) => selectedModules.includes(m.id));
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen flex flex-col bg-background"
+      initial={{ opacity: 0, x: 60 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -60 }}
+      transition={{ duration: 0.5, ease }}
+      className="min-h-screen flex flex-col"
     >
-      <header className="flex items-center justify-between px-8 py-5">
+      <header className="flex items-center justify-between px-8 py-6">
         <AtlasLogo />
         <StepProgress current={5} />
         <div className="w-16" />
@@ -26,22 +29,22 @@ const StepReview = () => {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="w-full max-w-xl space-y-8"
+          transition={{ delay: 0.1, duration: 0.6, ease }}
+          className="w-full max-w-xl space-y-10"
         >
           <div className="text-center space-y-3">
-            <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
+            <h2 className="text-4xl sm:text-[44px] font-display font-bold text-foreground tracking-tight">
               Ready to build.
             </h2>
             <p className="text-muted-foreground text-[15px]">
-              Here's a summary of your AI configuration.
+              Here's your AI configuration.
             </p>
           </div>
 
           <div className="space-y-4">
             {/* Company card */}
-            <div className="apple-card p-6 space-y-4">
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Company</h3>
+            <div className="glass-card p-6 space-y-4">
+              <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Company</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground text-xs">Name</span>
@@ -65,10 +68,12 @@ const StepReview = () => {
             </div>
 
             {/* Modules card */}
-            <div className="apple-card p-6 space-y-4">
+            <div className="glass-card p-6 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Knowledge Modules</h3>
-                <span className="text-xs font-medium text-foreground bg-muted px-2.5 py-1 rounded-full">{selectedList.length}</span>
+                <h3 className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">Knowledge Modules</h3>
+                <span className="text-xs font-semibold text-primary-foreground px-2.5 py-0.5 rounded-full"
+                  style={{ background: "var(--gradient-primary)" }}
+                >{selectedList.length}</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {selectedList.map((mod) => {
@@ -76,9 +81,9 @@ const StepReview = () => {
                   return (
                     <div
                       key={mod.id}
-                      className="flex items-center gap-1.5 bg-muted/60 px-3 py-1.5 rounded-full text-xs font-medium text-foreground"
+                      className="flex items-center gap-1.5 bg-muted/40 px-3 py-1.5 rounded-full text-xs font-medium text-foreground/80 border border-border/30"
                     >
-                      <Icon className="w-3 h-3" />
+                      <Icon className="w-3 h-3 text-primary" />
                       {mod.title}
                     </div>
                   );
@@ -90,14 +95,14 @@ const StepReview = () => {
           <div className="flex gap-3 justify-center pt-2">
             <button
               onClick={() => setStep(4)}
-              className="apple-btn-secondary h-[48px] px-6 text-sm flex items-center gap-2"
+              className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
             <button
               onClick={() => setStep(6)}
-              className="apple-btn-primary h-[48px] px-10 text-sm flex items-center justify-center gap-2"
+              className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               Create my AI

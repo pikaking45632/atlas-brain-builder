@@ -17,15 +17,23 @@ const StepProgress = ({ current }: StepProgressProps) => {
         return (
           <motion.div
             key={i}
-            className={`h-1 rounded-full transition-all duration-500 ${
-              isComplete
-                ? "w-8 bg-foreground"
-                : isActive
-                ? "w-8 bg-foreground"
-                : "w-4 bg-border"
-            }`}
-            layoutId={`step-dot-${i}`}
-          />
+            className="relative h-1 rounded-full overflow-hidden"
+            animate={{
+              width: isComplete || isActive ? 32 : 16,
+            }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          >
+            <div className="absolute inset-0 bg-muted/40 rounded-full" />
+            {(isComplete || isActive) && (
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{ background: "var(--gradient-primary)" }}
+                initial={{ scaleX: 0, transformOrigin: "left" }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              />
+            )}
+          </motion.div>
         );
       })}
     </div>
