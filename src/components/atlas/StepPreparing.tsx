@@ -4,6 +4,8 @@ import { Brain, Database, Layers, LayoutDashboard, Check } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 
+const ease = [0.16, 1, 0.3, 1] as const;
+
 const steps = [
   { icon: Brain, label: "Structuring your workplace model", duration: 1800 },
   { icon: Database, label: "Configuring knowledge modules", duration: 2000 },
@@ -30,13 +32,13 @@ const StepPreparing = () => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen flex flex-col items-center justify-center px-6 bg-background"
+      className="min-h-screen flex flex-col items-center justify-center px-6"
     >
-      <div className="space-y-12 text-center max-w-md w-full">
+      <div className="space-y-14 text-center max-w-md w-full">
         <AtlasLogo size="large" />
 
-        <div className="space-y-2">
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
+        <div className="space-y-3">
+          <h2 className="text-4xl sm:text-[44px] font-display font-bold text-foreground tracking-tight">
             Building your AI.
           </h2>
           <p className="text-muted-foreground text-[15px]">
@@ -45,9 +47,10 @@ const StepPreparing = () => {
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+        <div className="w-full h-1 bg-muted/30 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-foreground rounded-full"
+            className="h-full rounded-full"
+            style={{ background: "var(--gradient-primary)" }}
             initial={{ width: "0%" }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -64,18 +67,20 @@ const StepPreparing = () => {
                 key={s.label}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${
-                  isActive ? "bg-muted/60" : isDone ? "" : "opacity-30"
+                transition={{ delay: i * 0.1, ease }}
+                className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 ${
+                  isActive ? "glass-card" : isDone ? "" : "opacity-25"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                  isDone ? "bg-foreground" : isActive ? "bg-foreground" : "bg-muted"
-                }`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
+                  isDone || isActive ? "" : "bg-muted/30"
+                }`}
+                  style={(isDone || isActive) ? { background: "var(--gradient-primary)" } : undefined}
+                >
                   {isDone ? (
-                    <Check className="w-4 h-4 text-background" />
+                    <Check className="w-4 h-4 text-white" />
                   ) : (
-                    <Icon className={`w-4 h-4 ${isActive ? "text-background" : "text-muted-foreground"}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-muted-foreground"}`} />
                   )}
                 </div>
                 <span className={`text-[15px] font-medium ${isDone || isActive ? "text-foreground" : "text-muted-foreground"}`}>
@@ -83,7 +88,7 @@ const StepPreparing = () => {
                 </span>
                 {isActive && (
                   <motion.div
-                    className="ml-auto w-5 h-5 border-2 border-foreground border-t-transparent rounded-full"
+                    className="ml-auto w-5 h-5 border-2 border-primary border-t-transparent rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
                   />

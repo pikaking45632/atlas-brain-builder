@@ -7,6 +7,8 @@ import ModuleCard from "./ModuleCard";
 import StepProgress from "./StepProgress";
 import AtlasLogo from "./AtlasLogo";
 
+const ease = [0.16, 1, 0.3, 1] as const;
+
 const StepModules = () => {
   const { businessType, selectedModules, toggleModule, setStep } = useOnboarding();
   const [search, setSearch] = useState("");
@@ -37,25 +39,26 @@ const StepModules = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen flex flex-col bg-background"
+      initial={{ opacity: 0, x: 60 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -60 }}
+      transition={{ duration: 0.5, ease }}
+      className="min-h-screen flex flex-col"
     >
-      <header className="flex items-center justify-between px-8 py-5">
+      <header className="flex items-center justify-between px-8 py-6">
         <AtlasLogo />
         <StepProgress current={4} />
         <div className="w-16" />
       </header>
 
-      <div className="flex-1 px-6 py-6 max-w-5xl mx-auto w-full space-y-6">
+      <div className="flex-1 px-6 py-6 max-w-5xl mx-auto w-full space-y-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.6, ease }}
           className="text-center space-y-3"
         >
-          <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground tracking-tight">
+          <h2 className="text-4xl sm:text-[44px] font-display font-bold text-foreground tracking-tight">
             Design your model.
           </h2>
           <p className="text-muted-foreground text-[15px]">
@@ -65,11 +68,11 @@ const StepModules = () => {
 
         {/* Counter pill */}
         <div className="flex justify-center">
-          <div className="inline-flex items-center gap-3 bg-muted/60 rounded-full px-5 py-2.5 text-sm">
-            <span className={`font-semibold ${count >= 8 ? "text-foreground" : "text-foreground"}`}>
+          <div className="glass-card inline-flex items-center gap-3 px-5 py-2.5 text-sm">
+            <span className="font-semibold text-foreground">
               {count} selected
             </span>
-            <div className="w-px h-4 bg-border" />
+            <div className="w-px h-4 bg-border/40" />
             <span className="text-muted-foreground">
               {count < 8 ? `${8 - count} more needed` : "Ready to continue"}
             </span>
@@ -77,14 +80,14 @@ const StepModules = () => {
         </div>
 
         {/* Search + filters */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="relative max-w-sm mx-auto">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search modules..."
-              className="apple-input h-[44px] pl-11 pr-4 rounded-full text-sm"
+              className="cinematic-input h-[48px] pl-11 pr-4 rounded-full text-sm"
             />
           </div>
 
@@ -93,11 +96,12 @@ const StepModules = () => {
               <button
                 key={cat}
                 onClick={() => setActiveFilter(cat)}
-                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 ${
                   activeFilter === cat
-                    ? "bg-foreground text-background"
-                    : "bg-muted text-muted-foreground hover:text-foreground"
+                    ? "text-white shadow-[0_0_16px_-2px_hsl(var(--primary)/0.4)]"
+                    : "bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted/60"
                 }`}
+                style={activeFilter === cat ? { background: "var(--gradient-primary)" } : undefined}
               >
                 {cat}
               </button>
@@ -124,7 +128,7 @@ const StepModules = () => {
         <div className="flex gap-3 justify-center pt-4 pb-10">
           <button
             onClick={() => setStep(3)}
-            className="apple-btn-secondary h-[48px] px-6 text-sm flex items-center gap-2"
+            className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
@@ -132,7 +136,7 @@ const StepModules = () => {
           <button
             onClick={() => canContinue && setStep(5)}
             disabled={!canContinue}
-            className="apple-btn-primary h-[48px] px-10 text-sm flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
           >
             Review setup
             <ArrowRight className="w-4 h-4" />
