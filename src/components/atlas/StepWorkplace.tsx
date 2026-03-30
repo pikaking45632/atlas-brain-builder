@@ -5,7 +5,7 @@ import { businessTypes, type BusinessType } from "@/data/modules";
 import StepProgress from "./StepProgress";
 import AtlasLogo from "./AtlasLogo";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const StepWorkplace = () => {
   const { businessType, setField, setStep } = useOnboarding();

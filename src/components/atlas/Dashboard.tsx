@@ -5,7 +5,7 @@ import { modules } from "@/data/modules";
 import { dashboardThemes } from "@/data/dashboard-themes";
 import AtlasLogo from "./AtlasLogo";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const containerVariants = {
   hidden: { opacity: 0 },

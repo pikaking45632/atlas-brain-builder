@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import AtlasLogo from "./AtlasLogo";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const StepWelcome = () => {
   const { email, password, setField, setStep } = useOnboarding();

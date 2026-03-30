@@ -4,7 +4,7 @@ import { Brain, Database, Layers, LayoutDashboard, Check } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const steps = [
   { icon: Brain, label: "Structuring your workplace model", duration: 1800 },

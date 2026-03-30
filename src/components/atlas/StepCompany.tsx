@@ -9,7 +9,7 @@ const teamSizes = ["1–10", "11–50", "51–200", "201–500", "500+"];
 const countries = ["United Kingdom", "Ireland", "United States", "Canada", "Australia", "Other"];
 const roles = ["Founder / CEO", "Operations Manager", "HR Manager", "IT Manager", "Finance Manager", "Other"];
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const StepCompany = () => {
   const { companyName, industry, teamSize, country, role, goals, setField, setStep } = useOnboarding();

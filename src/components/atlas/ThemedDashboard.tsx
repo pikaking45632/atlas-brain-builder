@@ -4,7 +4,7 @@ import AtlasLogo from "./AtlasLogo";
 import { Send, Users, CalendarDays, Settings } from "lucide-react";
 import { useState } from "react";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const suggestions = [
   "Give me a full company briefing",

@@ -6,7 +6,7 @@ import { useOnboarding } from "@/store/onboarding";
 import { useToast } from "@/hooks/use-toast";
 import { getBackendClient } from "@/lib/backend";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 const InviteColleagues = () => {
   const { companyName, setStep } = useOnboarding();

@@ -5,7 +5,7 @@ import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 import { getBackendClient } from "@/lib/backend";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as const;
 
 interface UploadedFile {
   name: string;
