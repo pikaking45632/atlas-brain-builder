@@ -1,5 +1,6 @@
 import { AnimatePresence } from "framer-motion";
 import { useOnboarding } from "@/store/onboarding";
+import StepPricing from "@/components/atlas/StepPricing";
 import StepWelcome from "@/components/atlas/StepWelcome";
 import StepCompany from "@/components/atlas/StepCompany";
 import StepWorkplace from "@/components/atlas/StepWorkplace";
