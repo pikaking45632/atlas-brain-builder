@@ -86,7 +86,7 @@ const StepWorkplace = () => {
               Back
             </button>
             <button
-              onClick={() => businessType && setStep(4)}
+              onClick={() => businessType && setStep(5)}
               disabled={!businessType}
               className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
             >

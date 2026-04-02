@@ -129,7 +129,7 @@ const StepCompany = () => {
               Back
             </button>
             <button
-              onClick={() => canContinue && setStep(3)}
+              onClick={() => canContinue && setStep(4)}
               disabled={!canContinue}
               className="btn-primary flex-1 h-[52px] text-sm flex items-center justify-center gap-2"
             >

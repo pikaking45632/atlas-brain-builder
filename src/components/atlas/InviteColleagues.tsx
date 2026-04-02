@@ -127,7 +127,7 @@ const InviteColleagues = () => {
             <button onClick={() => setStep(8)} className="btn-ghost h-[48px] px-6 text-sm flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
-            <button onClick={() => setStep(7)} className="btn-primary h-[48px] px-8 text-sm">Done</button>
+            <button onClick={() => setStep(8)} className="btn-primary h-[48px] px-8 text-sm">Done</button>
           </div>
         </div>
       </div>

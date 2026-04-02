@@ -51,7 +51,7 @@ const Dashboard = () => {
       icon: MessageSquare,
       title: "Start with Atlas",
       description: "Ask your first question",
-      step: 11,
+      step: 12,
       gradient: "from-amber-500 to-orange-500",
     },
   ];

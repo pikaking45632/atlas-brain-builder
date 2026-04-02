@@ -101,7 +101,7 @@ const StepReview = () => {
               Back
             </button>
             <button
-              onClick={() => setStep(6)}
+              onClick={() => setStep(7)}
               className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />

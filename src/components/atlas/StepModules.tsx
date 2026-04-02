@@ -134,7 +134,7 @@ const StepModules = () => {
             Back
           </button>
           <button
-            onClick={() => canContinue && setStep(5)}
+            onClick={() => canContinue && setStep(6)}
             disabled={!canContinue}
             className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
           >
