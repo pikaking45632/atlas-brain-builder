@@ -3,6 +3,7 @@ import { BusinessType } from "@/data/modules";
 
 export interface OnboardingState {
   step: number;
+  plan: string;
   email: string;
   password: string;
   companyName: string;
