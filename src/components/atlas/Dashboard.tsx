@@ -37,7 +37,7 @@ const Dashboard = () => {
       icon: Users,
       title: "Invite Colleagues",
       description: "Give your team Atlas intelligence",
-      step: 9,
+      step: 10,
       gradient: "from-violet-500 to-purple-500",
     },
     {
