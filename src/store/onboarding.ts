@@ -22,6 +22,7 @@ export interface OnboardingState {
 
 export const useOnboarding = create<OnboardingState>((set) => ({
   step: 1,
+  plan: "",
   email: "",
   password: "",
   companyName: "",
