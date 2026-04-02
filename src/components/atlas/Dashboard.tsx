@@ -44,7 +44,7 @@ const Dashboard = () => {
       icon: Link2,
       title: "Connect Sources",
       description: "Link your existing tools and data",
-      step: 10,
+      step: 11,
       gradient: "from-emerald-500 to-teal-500",
     },
     {
