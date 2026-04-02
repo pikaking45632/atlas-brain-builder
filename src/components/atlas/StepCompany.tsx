@@ -122,14 +122,14 @@ const StepCompany = () => {
 
           <div className="flex gap-3 pt-2">
             <button
-              onClick={() => setStep(1)}
+              onClick={() => setStep(2)}
               className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
             <button
-              onClick={() => canContinue && setStep(3)}
+              onClick={() => canContinue && setStep(4)}
               disabled={!canContinue}
               className="btn-primary flex-1 h-[52px] text-sm flex items-center justify-center gap-2"
             >

@@ -19,7 +19,7 @@ const StepPreparing = () => {
 
   useEffect(() => {
     if (activeIndex >= steps.length) {
-      const t = setTimeout(() => setStep(7), 600);
+      const t = setTimeout(() => setStep(8), 600);
       return () => clearTimeout(t);
     }
     const t = setTimeout(() => setActiveIndex((i) => i + 1), steps[activeIndex].duration);

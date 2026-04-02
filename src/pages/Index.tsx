@@ -1,5 +1,6 @@
 import { AnimatePresence } from "framer-motion";
 import { useOnboarding } from "@/store/onboarding";
+import StepPricing from "@/components/atlas/StepPricing";
 import StepWelcome from "@/components/atlas/StepWelcome";
 import StepCompany from "@/components/atlas/StepCompany";
 import StepWorkplace from "@/components/atlas/StepWorkplace";
@@ -24,17 +25,18 @@ const Index = () => {
 
       <div className="relative z-10">
         <AnimatePresence mode="wait">
-          {step === 1 && <StepWelcome key="welcome" />}
-          {step === 2 && <StepCompany key="company" />}
-          {step === 3 && <StepWorkplace key="workplace" />}
-          {step === 4 && <StepModules key="modules" />}
-          {step === 5 && <StepReview key="review" />}
-          {step === 6 && <StepPreparing key="preparing" />}
-          {step === 7 && <Dashboard key="dashboard" />}
-          {step === 8 && <UploadDocuments key="upload" />}
-          {step === 9 && <InviteColleagues key="invite" />}
-          {step === 10 && <ConnectSources key="sources" />}
-          {step === 11 && <ThemedDashboard key="themed-dashboard" />}
+          {step === 1 && <StepPricing key="pricing" />}
+          {step === 2 && <StepWelcome key="welcome" />}
+          {step === 3 && <StepCompany key="company" />}
+          {step === 4 && <StepWorkplace key="workplace" />}
+          {step === 5 && <StepModules key="modules" />}
+          {step === 6 && <StepReview key="review" />}
+          {step === 7 && <StepPreparing key="preparing" />}
+          {step === 8 && <Dashboard key="dashboard" />}
+          {step === 9 && <UploadDocuments key="upload" />}
+          {step === 10 && <InviteColleagues key="invite" />}
+          {step === 11 && <ConnectSources key="sources" />}
+          {step === 12 && <ThemedDashboard key="themed-dashboard" />}
         </AnimatePresence>
       </div>
     </div>

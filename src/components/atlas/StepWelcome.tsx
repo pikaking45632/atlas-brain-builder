@@ -67,7 +67,7 @@ const StepWelcome = () => {
             </div>
 
             <button
-              onClick={() => canContinue && setStep(2)}
+              onClick={() => canContinue && setStep(3)}
               disabled={!canContinue}
               className="btn-primary w-full h-[56px] text-[15px] flex items-center justify-center gap-2"
             >

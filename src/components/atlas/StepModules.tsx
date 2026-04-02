@@ -127,14 +127,14 @@ const StepModules = () => {
         {/* Actions */}
         <div className="flex gap-3 justify-center pt-4 pb-10">
           <button
-            onClick={() => setStep(3)}
+            onClick={() => setStep(4)}
             className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </button>
           <button
-            onClick={() => canContinue && setStep(5)}
+            onClick={() => canContinue && setStep(6)}
             disabled={!canContinue}
             className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
           >

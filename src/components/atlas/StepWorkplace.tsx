@@ -79,14 +79,14 @@ const StepWorkplace = () => {
 
           <div className="flex gap-3 justify-center pt-2">
             <button
-              onClick={() => setStep(2)}
+              onClick={() => setStep(3)}
               className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
             <button
-              onClick={() => businessType && setStep(4)}
+              onClick={() => businessType && setStep(5)}
               disabled={!businessType}
               className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
             >

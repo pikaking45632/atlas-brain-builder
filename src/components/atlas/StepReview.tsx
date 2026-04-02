@@ -94,14 +94,14 @@ const StepReview = () => {
 
           <div className="flex gap-3 justify-center pt-2">
             <button
-              onClick={() => setStep(4)}
+              onClick={() => setStep(5)}
               className="btn-ghost h-[52px] px-6 text-sm flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
             <button
-              onClick={() => setStep(6)}
+              onClick={() => setStep(7)}
               className="btn-primary h-[52px] px-10 text-sm flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
