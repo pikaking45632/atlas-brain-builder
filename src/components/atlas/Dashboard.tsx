@@ -30,7 +30,7 @@ const Dashboard = () => {
       icon: Upload,
       title: "Upload Documents",
       description: "Feed your AI with company knowledge",
-      step: 8,
+      step: 9,
       gradient: "from-blue-500 to-cyan-500",
     },
     {
