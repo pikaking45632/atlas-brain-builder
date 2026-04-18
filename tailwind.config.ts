@@ -14,8 +14,22 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Plus Jakarta Sans', 'sans-serif'],
+        display: ['Sora', 'Inter', 'sans-serif'],
+        sora: ['Sora', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        inter: ['Inter', 'sans-serif'],
+      },
+      fontSize: {
+        h1: ['48px', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
+        h2: ['36px', { lineHeight: '1.2', fontWeight: '600' }],
+        h3: ['24px', { lineHeight: '1.3', fontWeight: '600' }],
+        h4: ['18px', { lineHeight: '1.4', fontWeight: '600' }],
+        body: ['16px', { lineHeight: '1.7', fontWeight: '400' }],
+        label: ['13px', { lineHeight: '1.4', letterSpacing: '0.04em', fontWeight: '500' }],
+      },
+      maxWidth: {
+        content: '1200px',
       },
       colors: {
         border: "hsl(var(--border))",
@@ -78,11 +92,16 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        xl: "calc(var(--radius) + 4px)",
-        "2xl": "calc(var(--radius) + 8px)",
+        sm: "8px",
+        md: "12px",
+        lg: "12px",
+        xl: "12px",
+        "2xl": "12px",
+        full: "99px",
+      },
+      boxShadow: {
+        card: "0 1px 4px rgba(10,22,40,0.06)",
+        "card-hover": "0 4px 16px rgba(10,22,40,0.10)",
       },
       keyframes: {
         "accordion-down": {
@@ -93,15 +112,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "1" },
+        "section-in": {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "section-in": "section-in 0.4s ease-out both",
       },
     },
   },

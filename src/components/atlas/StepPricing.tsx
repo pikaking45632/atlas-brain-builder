@@ -61,9 +61,9 @@ const plans = [
       "On-premise deployment",
       "Dedicated account manager",
     ],
-    gradient: "from-purple-500/20 to-pink-500/20",
-    border: "border-purple-500/30",
-    glow: "hover:shadow-purple-500/20",
+    gradient: "from-transparent to-transparent",
+    border: "border-border",
+    glow: "hover:shadow-card-hover",
   },
 ];
 
