@@ -20,9 +20,9 @@ const plans = [
       "Email support",
       "Basic analytics",
     ],
-    gradient: "from-blue-500/20 to-cyan-500/20",
-    border: "border-blue-500/30",
-    glow: "hover:shadow-blue-500/20",
+    gradient: "from-transparent to-transparent",
+    border: "border-border",
+    glow: "hover:shadow-card-hover",
   },
   {
     id: "sme",
@@ -41,9 +41,9 @@ const plans = [
       "Custom integrations",
       "API access",
     ],
-    gradient: "from-primary/20 to-accent/20",
-    border: "border-primary/50",
-    glow: "hover:shadow-primary/30",
+    gradient: "from-transparent to-transparent",
+    border: "border-accent",
+    glow: "hover:shadow-card-hover",
   },
   {
     id: "enterprise",
@@ -130,16 +130,15 @@ const StepPricing = () => {
                 transition={{ delay: 0.3 + i * 0.1, duration: 0.6, ease }}
                 onClick={() => handleSelect(p.id)}
                 className={`
-                  relative rounded-2xl p-6 cursor-pointer transition-all duration-300
-                  bg-gradient-to-b ${p.gradient} backdrop-blur-sm
-                  border ${isSelected ? "border-primary shadow-lg shadow-primary/20" : p.border}
-                  hover:scale-[1.02] ${p.glow} hover:shadow-lg
-                  ${p.popular ? "md:-mt-4 md:mb-0 md:pb-8" : ""}
+                  relative rounded-xl p-8 cursor-pointer transition-all duration-200
+                  bg-card shadow-card hover:shadow-card-hover hover:-translate-y-0.5
+                  border ${isSelected || p.popular ? "border-2 border-accent" : "border-border"}
+                  ${p.popular ? "md:-mt-4 md:mb-0 md:pb-10" : ""}
                 `}
               >
                 {p.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-primary text-primary-foreground text-xs font-semibold tracking-wide">
-                    Most Popular
+                  <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-accent text-accent-foreground text-[11px] font-semibold tracking-[0.08em] uppercase">
+                    Recommended
                   </div>
                 )}
 
@@ -182,18 +181,14 @@ const StepPricing = () => {
           <button
             onClick={handleContinue}
             disabled={!plan}
-            className={`
-              group flex items-center gap-3 px-8 py-4 rounded-full text-base font-semibold
-              transition-all duration-300
-              ${plan
-                ? "bg-primary text-primary-foreground hover:shadow-lg hover:shadow-primary/30 hover:scale-105 active:scale-95"
-                : "bg-muted text-muted-foreground cursor-not-allowed"
-              }
-            `}
+            className="btn-primary inline-flex items-center gap-2 disabled:opacity-100"
           >
             {plan === "enterprise" ? "Contact Sales" : "Get Started"}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </button>
+          <p className="text-[13px] text-muted-foreground mt-3 text-center">
+            No credit card required · Cancel anytime
+          </p>
         </motion.div>
       </div>
     </motion.div>
