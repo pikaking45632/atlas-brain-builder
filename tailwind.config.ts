@@ -19,6 +19,7 @@ export default {
         body: ['Inter', 'sans-serif'],
         sans: ['Inter', 'sans-serif'],
         inter: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
         h1: ['48px', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
