@@ -7,35 +7,25 @@ interface StepProgressProps {
 }
 
 const StepProgress = ({ current }: StepProgressProps) => {
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: totalSteps }).map((_, i) => {
-        const stepNum = i + 1;
-        const isComplete = current > stepNum;
-        const isActive = current === stepNum;
+  const clamped = Math.min(Math.max(current, 1), totalSteps);
+  const pct = (clamped / totalSteps) * 100;
+  const label = String(clamped).padStart(2, "0");
+  const total = String(totalSteps).padStart(2, "0");
 
-        return (
-          <motion.div
-            key={i}
-            className="relative h-1 rounded-full overflow-hidden"
-            animate={{
-              width: isComplete || isActive ? 32 : 16,
-            }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-          >
-            <div className="absolute inset-0 bg-muted/40 rounded-full" />
-            {(isComplete || isActive) && (
-              <motion.div
-                className="absolute inset-0 rounded-full"
-                style={{ background: "var(--gradient-primary)" }}
-                initial={{ scaleX: 0, transformOrigin: "left" }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              />
-            )}
-          </motion.div>
-        );
-      })}
+  return (
+    <div className="flex items-center gap-3">
+      <span className="font-mono text-[11px] tracking-[0.14em] text-muted-foreground">
+        STEP <span className="text-foreground">{label}</span>
+        <span className="text-muted-foreground/50"> / {total}</span>
+      </span>
+      <div className="relative h-[2px] w-32 bg-border overflow-hidden rounded-full">
+        <motion.div
+          className="absolute inset-y-0 left-0 bg-accent"
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
     </div>
   );
 };
