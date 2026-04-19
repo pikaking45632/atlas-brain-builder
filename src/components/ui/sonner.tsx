@@ -14,8 +14,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
       closeButton={false}
       className="toaster group"
       toastOptions={{
-        // Slide from top-right, dark surface, dismiss on click.
-        onClick: (t) => toast.dismiss(t.id),
         classNames: {
           toast:
             "group toast cursor-pointer group-[.toaster]:bg-foreground group-[.toaster]:text-background group-[.toaster]:border-foreground group-[.toaster]:shadow-[0_10px_30px_-10px_rgba(10,22,40,0.45)] group-[.toaster]:rounded-md",
