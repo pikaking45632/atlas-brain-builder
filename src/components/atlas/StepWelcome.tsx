@@ -29,13 +29,13 @@ const StepWelcome = () => {
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors">
+          <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
             Pricing
           </a>
-          <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors">
+          <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
             Docs
           </a>
-          <button className="text-[13px] text-foreground link-underline">
+          <button onClick={() => setStep(1)} className="text-[13px] text-foreground link-underline">
             Sign in
           </button>
         </div>
