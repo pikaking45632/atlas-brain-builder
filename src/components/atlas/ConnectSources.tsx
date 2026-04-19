@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Link2, X, Shield, Sparkles, Cake } from "lucide-react";
+import {
+  ArrowLeft, ArrowRight, X, Shield, Sparkles,
+  FolderOpen, FileSpreadsheet, FileText, Package, MessageCircle, Users,
+  Target, BookOpen, Calculator, Receipt, Magnet, Cloud, Construction, Banknote,
+  Wrench, Truck, Pizza, UtensilsCrossed, ShoppingBag, Car, Check, Database,
+} from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
+import DrawCheck from "./DrawCheck";
+import MagneticButton from "./MagneticButton";
 import { useOnboarding } from "@/store/onboarding";
 import { BusinessType } from "@/data/modules";
 
@@ -10,39 +17,38 @@ const ease = [0.16, 1, 0.3, 1] as const;
 interface Source {
   id: string;
   name: string;
-  icon: string;
-  color: string;
+  icon: React.ComponentType<any>;
   categories: BusinessType[];
 }
 
 const allSources: Source[] = [
-  { id: "google-drive", name: "Google Drive", icon: "📁", color: "from-yellow-400 to-amber-500", categories: ["General SME", "Professional Services", "Property", "Retail", "Insurance"] },
-  { id: "sharepoint", name: "SharePoint", icon: "📊", color: "from-blue-500 to-blue-600", categories: ["General SME", "Professional Services", "Insurance", "Manufacturing", "Construction"] },
-  { id: "notion", name: "Notion", icon: "📝", color: "from-gray-700 to-gray-900", categories: ["General SME", "Professional Services", "Retail"] },
-  { id: "dropbox", name: "Dropbox", icon: "📦", color: "from-blue-400 to-blue-500", categories: ["General SME", "Professional Services", "Trades", "Property"] },
-  { id: "slack", name: "Slack", icon: "💬", color: "from-purple-500 to-pink-500", categories: ["General SME", "Professional Services", "Retail", "Hospitality"] },
-  { id: "teams", name: "Microsoft Teams", icon: "👥", color: "from-indigo-500 to-purple-600", categories: ["General SME", "Professional Services", "Insurance", "Manufacturing", "Construction"] },
-  { id: "jira", name: "Jira", icon: "🎯", color: "from-blue-600 to-blue-700", categories: ["Professional Services", "Manufacturing", "Construction"] },
-  { id: "confluence", name: "Confluence", icon: "📖", color: "from-blue-500 to-indigo-500", categories: ["Professional Services", "Insurance", "Manufacturing"] },
-  { id: "xero", name: "Xero", icon: "💰", color: "from-cyan-500 to-blue-500", categories: ["General SME", "Retail", "Trades", "Property", "Hospitality", "Construction"] },
-  { id: "quickbooks", name: "QuickBooks", icon: "📒", color: "from-green-500 to-green-600", categories: ["General SME", "Retail", "Trades", "Automotive"] },
-  { id: "hubspot", name: "HubSpot", icon: "🧲", color: "from-orange-400 to-red-500", categories: ["General SME", "Professional Services", "Retail", "Insurance"] },
-  { id: "salesforce", name: "Salesforce", icon: "☁️", color: "from-blue-400 to-cyan-400", categories: ["Insurance", "Professional Services", "Automotive", "Retail"] },
-  { id: "procore", name: "Procore", icon: "🏗️", color: "from-orange-500 to-yellow-500", categories: ["Construction", "Trades", "Property"] },
-  { id: "sage", name: "Sage", icon: "📈", color: "from-green-600 to-emerald-500", categories: ["Construction", "Manufacturing", "General SME", "Trades"] },
-  { id: "citb", name: "CITB Portal", icon: "🔧", color: "from-teal-500 to-cyan-600", categories: ["Construction", "Trades"] },
-  { id: "fleet-tracker", name: "Fleet Tracker", icon: "🚛", color: "from-red-500 to-orange-500", categories: ["Logistics", "Automotive", "Construction", "Trades"] },
-  { id: "toast-pos", name: "Toast POS", icon: "🍞", color: "from-orange-400 to-red-400", categories: ["Hospitality"] },
-  { id: "opentable", name: "OpenTable", icon: "🍽️", color: "from-red-500 to-red-600", categories: ["Hospitality"] },
-  { id: "shopify", name: "Shopify", icon: "🛒", color: "from-green-500 to-lime-500", categories: ["Retail"] },
-  { id: "autotrader", name: "AutoTrader", icon: "🚗", color: "from-yellow-500 to-orange-500", categories: ["Automotive"] },
+  { id: "google-drive",  name: "Google Drive",     icon: FolderOpen,         categories: ["General SME", "Professional Services", "Property", "Retail", "Insurance"] },
+  { id: "sharepoint",    name: "SharePoint",       icon: FileSpreadsheet,    categories: ["General SME", "Professional Services", "Insurance", "Manufacturing", "Construction"] },
+  { id: "notion",        name: "Notion",           icon: FileText,           categories: ["General SME", "Professional Services", "Retail"] },
+  { id: "dropbox",       name: "Dropbox",          icon: Package,            categories: ["General SME", "Professional Services", "Trades", "Property"] },
+  { id: "slack",         name: "Slack",            icon: MessageCircle,      categories: ["General SME", "Professional Services", "Retail", "Hospitality"] },
+  { id: "teams",         name: "Microsoft Teams",  icon: Users,              categories: ["General SME", "Professional Services", "Insurance", "Manufacturing", "Construction"] },
+  { id: "jira",          name: "Jira",             icon: Target,             categories: ["Professional Services", "Manufacturing", "Construction"] },
+  { id: "confluence",    name: "Confluence",       icon: BookOpen,           categories: ["Professional Services", "Insurance", "Manufacturing"] },
+  { id: "xero",          name: "Xero",             icon: Calculator,         categories: ["General SME", "Retail", "Trades", "Property", "Hospitality", "Construction"] },
+  { id: "quickbooks",    name: "QuickBooks",       icon: Receipt,            categories: ["General SME", "Retail", "Trades", "Automotive"] },
+  { id: "hubspot",       name: "HubSpot",          icon: Magnet,             categories: ["General SME", "Professional Services", "Retail", "Insurance"] },
+  { id: "salesforce",    name: "Salesforce",       icon: Cloud,              categories: ["Insurance", "Professional Services", "Automotive", "Retail"] },
+  { id: "procore",       name: "Procore",          icon: Construction,       categories: ["Construction", "Trades", "Property"] },
+  { id: "sage",          name: "Sage",             icon: Banknote,           categories: ["Construction", "Manufacturing", "General SME", "Trades"] },
+  { id: "citb",          name: "CITB Portal",      icon: Wrench,             categories: ["Construction", "Trades"] },
+  { id: "fleet-tracker", name: "Fleet Tracker",    icon: Truck,              categories: ["Logistics", "Automotive", "Construction", "Trades"] },
+  { id: "toast-pos",     name: "Toast POS",        icon: Pizza,              categories: ["Hospitality"] },
+  { id: "opentable",     name: "OpenTable",        icon: UtensilsCrossed,    categories: ["Hospitality"] },
+  { id: "shopify",       name: "Shopify",          icon: ShoppingBag,        categories: ["Retail"] },
+  { id: "autotrader",    name: "AutoTrader",       icon: Car,                categories: ["Automotive"] },
 ];
 
 const permissions = [
-  { icon: "📄", text: "Read documents and files from your connected accounts" },
-  { icon: "🔍", text: "Search across your sources to answer your questions" },
-  { icon: "🔄", text: "Sync new documents automatically when they change" },
-  { icon: "🔒", text: "Atlas will never modify, delete or share your files" },
+  "Read documents and files from your connected accounts",
+  "Search across your sources to answer your questions",
+  "Sync new documents automatically when they change",
+  "Atlas will never modify, delete, or share your files",
 ];
 
 const ConnectSources = () => {
@@ -51,14 +57,13 @@ const ConnectSources = () => {
   const [connectedSources, setConnectedSources] = useState<string[]>([]);
 
   const sortedSources = [...allSources].sort((a, b) => {
-    const aRelevant = businessType && a.categories.includes(businessType);
-    const bRelevant = businessType && b.categories.includes(businessType);
-    if (aRelevant && !bRelevant) return -1;
-    if (!aRelevant && bRelevant) return 1;
+    const aRel = businessType && a.categories.includes(businessType);
+    const bRel = businessType && b.categories.includes(businessType);
+    if (aRel && !bRel) return -1;
+    if (!aRel && bRel) return 1;
     return 0;
   });
 
-  const handleConnect = (source: Source) => setSelectedSource(source);
   const confirmConnect = () => {
     if (selectedSource) {
       setConnectedSources((prev) => [...prev, selectedSource.id]);
@@ -68,84 +73,96 @@ const ConnectSources = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 60 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -60 }}
-      transition={{ duration: 0.5, ease }}
-      className="min-h-screen flex flex-col"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.4, ease }}
+      className="min-h-screen flex flex-col bg-background"
     >
-      <header className="flex items-center px-8 py-6">
+      <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border">
         <AtlasLogo />
+        <button onClick={() => setStep(8)} className="text-[13px] text-muted-foreground hover:text-foreground link-underline">
+          Back to dashboard
+        </button>
       </header>
 
-      <div className="flex-1 flex flex-col items-center px-4 py-12">
-        <div className="w-full max-w-4xl space-y-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease }} className="text-center space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center mx-auto shadow-[0_0_40px_-8px_hsl(160_70%_50%/0.4)]">
-              <Link2 className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-4xl font-display font-bold text-foreground tracking-tight">Connect Your Sources</h1>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Link the tools you already use. Atlas will learn from them.
-            </p>
-            {businessType && (
-              <div className="inline-flex items-center gap-1.5 text-sm font-medium text-primary">
-                <Sparkles className="w-3.5 h-3.5" />
-                Recommended for {businessType}
-              </div>
-            )}
-          </motion.div>
-
-          {/* Source grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, ease }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-          >
-            {sortedSources.map((source, i) => {
-              const isConnected = connectedSources.includes(source.id);
-              const isRelevant = businessType && source.categories.includes(businessType);
-              return (
-                <motion.button
-                  key={source.id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03, ease }}
-                  whileHover={{ scale: 1.04, y: -3 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => !isConnected && handleConnect(source)}
-                  className={`relative flex flex-col items-center gap-2.5 p-5 rounded-xl border transition-all duration-300 ${
-                    isConnected
-                      ? "border-primary/40 bg-primary/5 shadow-[0_0_20px_-4px_hsl(var(--primary)/0.2)]"
-                      : isRelevant
-                      ? "border-primary/20 bg-card/50 hover:border-primary/40 hover:bg-card/80"
-                      : "border-border/30 bg-card/30 hover:border-border/50 hover:bg-card/60"
-                  }`}
-                >
-                  {isConnected && (
-                    <div className="absolute top-2 right-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary" />
-                    </div>
-                  )}
-                  {isRelevant && !isConnected && (
-                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  )}
-                  <span className="text-2xl">{source.icon}</span>
-                  <span className="text-xs font-medium text-foreground/80 text-center leading-tight">{source.name}</span>
-                </motion.button>
-              );
-            })}
-          </motion.div>
-
-          <div className="flex justify-between pt-4">
-            <button onClick={() => setStep(8)} className="btn-ghost h-[48px] px-6 text-sm flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </button>
-            <button onClick={() => setStep(8)} className="btn-primary h-[48px] px-8 text-sm">
-              {connectedSources.length > 0 ? `Continue (${connectedSources.length} connected)` : "Skip for now"}
-            </button>
+      <div className="flex-1 max-w-[1200px] mx-auto w-full px-6 md:px-10 py-16 lg:py-20 space-y-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease }}
+          className="grid lg:grid-cols-12 gap-8 items-end"
+        >
+          <div className="lg:col-span-7">
+            <span className="eyebrow inline-flex items-center gap-2">
+              <Database className="w-3 h-3" strokeWidth={1.5} />
+              ENRICH · SOURCES
+            </span>
+            <h1 className="mt-4 text-[44px] sm:text-[52px] font-display font-bold text-foreground leading-[1.05] tracking-[-0.03em]">
+              Connect<br />your tools.
+            </h1>
           </div>
+          <p className="lg:col-span-5 text-[15px] leading-[1.65] text-muted-foreground">
+            Wire in the systems Atlas should learn from. We'll keep them in
+            sync — you don't lift a finger after this.
+            {businessType && (
+              <span className="block mt-3 inline-flex items-center gap-1.5 font-mono text-[11px] tracking-[0.14em] uppercase text-accent">
+                <Sparkles className="w-3 h-3" strokeWidth={1.5} />
+                Recommended for {businessType}
+              </span>
+            )}
+          </p>
+        </motion.div>
+
+        {/* Source grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.5, ease }}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+        >
+          {sortedSources.map((source, i) => {
+            const Icon = source.icon;
+            const isConnected = connectedSources.includes(source.id);
+            const isRelevant = businessType && source.categories.includes(businessType);
+            return (
+              <motion.button
+                key={source.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03, duration: 0.4, ease }}
+                onClick={() => !isConnected && setSelectedSource(source)}
+                className={`relative flex flex-col items-center gap-3 py-6 px-4 rounded-[10px] border bg-card transition-all duration-200 group ${
+                  isConnected
+                    ? "border-accent shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+                    : "border-border hover:border-foreground/20 hover:-translate-y-[2px] hover:shadow-card-hover"
+                }`}
+              >
+                {isConnected && (
+                  <span className="absolute top-2 right-2 w-4 h-4 rounded-full bg-accent flex items-center justify-center">
+                    <DrawCheck size={11} colorClass="text-accent-foreground" stroke={2.5} />
+                  </span>
+                )}
+                {isRelevant && !isConnected && (
+                  <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-accent" />
+                )}
+                <Icon className={`w-6 h-6 ${isConnected ? "text-accent" : "text-foreground/60 group-hover:text-foreground"}`} strokeWidth={1.5} />
+                <span className="text-[12.5px] font-medium text-foreground text-center leading-tight">
+                  {source.name}
+                </span>
+              </motion.button>
+            );
+          })}
+        </motion.div>
+
+        <div className="flex items-center gap-3 pt-4">
+          <button onClick={() => setStep(8)} className="btn-ghost h-[48px] px-5 text-[14px] flex items-center gap-2">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+          <MagneticButton onClick={() => setStep(8)} className="btn-primary h-[48px] px-7 flex items-center gap-2 group">
+            {connectedSources.length > 0 ? `Continue · ${connectedSources.length} connected` : "Skip for now"}
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+          </MagneticButton>
         </div>
       </div>
 
@@ -156,55 +173,59 @@ const ConnectSources = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
             onClick={() => setSelectedSource(null)}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 20, stiffness: 300 }}
-              className="w-full max-w-md glass-card p-6 space-y-6 shadow-2xl"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease }}
+              className="w-full max-w-md rounded-[12px] border border-border bg-card shadow-card-hover"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between p-5 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${selectedSource.color} flex items-center justify-center text-xl shadow-lg`}>
-                    {selectedSource.icon}
+                  <div className="w-9 h-9 rounded-md bg-muted flex items-center justify-center">
+                    <selectedSource.icon className="w-4 h-4 text-foreground" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-display font-bold text-foreground">Authorise {selectedSource.name}</h3>
-                    <p className="text-sm text-muted-foreground">Atlas Intelligence Systems</p>
+                    <h3 className="text-[15px] font-semibold text-foreground">Authorise {selectedSource.name}</h3>
+                    <p className="font-mono text-[11px] tracking-[0.04em] text-muted-foreground">Atlas Intelligence Systems</p>
                   </div>
                 </div>
-                <button onClick={() => setSelectedSource(null)} className="text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-5 h-5" />
+                <button
+                  onClick={() => setSelectedSource(null)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <Shield className="w-4 h-4 text-primary" />
+              <div className="p-5 space-y-3">
+                <div className="flex items-center gap-2 text-[12.5px] font-medium text-foreground">
+                  <Shield className="w-3.5 h-3.5 text-accent" strokeWidth={1.75} />
                   Atlas is requesting permission to:
                 </div>
-                <div className="space-y-2">
-                  {permissions.map((perm, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/20">
-                      <span className="text-base shrink-0">{perm.icon}</span>
-                      <span className="text-sm text-foreground/80">{perm.text}</span>
-                    </div>
+                <ul className="space-y-2">
+                  {permissions.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-[13px] text-foreground/85">
+                      <Check className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" strokeWidth={2.25} />
+                      {p}
+                    </li>
                   ))}
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/20 border border-dashed border-border/30">
-                    <Cake className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-sm text-muted-foreground italic">Atlas cannot bake you a cake 🎂 …yet</span>
-                  </div>
-                </div>
+                </ul>
               </div>
 
-              <div className="flex gap-3">
-                <button className="btn-ghost flex-1 h-[44px] text-sm" onClick={() => setSelectedSource(null)}>Cancel</button>
-                <button className="btn-primary flex-1 h-[44px] text-sm flex items-center justify-center gap-2" onClick={confirmConnect}>
-                  <CheckCircle2 className="w-4 h-4" />
+              <div className="flex gap-2 p-5 pt-0">
+                <button className="btn-ghost flex-1 h-[42px] text-[13.5px]" onClick={() => setSelectedSource(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="btn-primary flex-1 h-[42px] text-[13.5px] inline-flex items-center justify-center gap-2"
+                  onClick={confirmConnect}
+                >
+                  <Check className="w-3.5 h-3.5" />
                   Authorise
                 </button>
               </div>

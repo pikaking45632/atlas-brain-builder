@@ -9,60 +9,52 @@ interface ModuleCardProps {
   onToggle: () => void;
 }
 
+const ease = [0.16, 1, 0.3, 1] as const;
+
 const ModuleCard = ({ module, selected, recommended, onToggle }: ModuleCardProps) => {
   const Icon = module.icon;
 
   return (
     <motion.button
-      onClick={onToggle}
-      whileHover={{ y: -3, scale: 1.02 }}
-      whileTap={{ scale: 0.97 }}
       layout
-      className={`relative w-full text-left rounded-2xl p-4 border transition-all duration-300 cursor-pointer group ${
+      onClick={onToggle}
+      transition={{ layout: { duration: 0.3, ease } }}
+      className={`relative text-left p-4 rounded-[10px] border bg-card transition-all duration-200 group overflow-hidden ${
         selected
-          ? "border-primary/50 bg-primary/10 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.25)]"
-          : "border-border/30 bg-card/50 hover:border-border/50 hover:bg-card/80"
+          ? "border-accent shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+          : "border-border hover:border-foreground/20 hover:-translate-y-[2px] hover:shadow-card-hover"
       }`}
     >
       {recommended && !selected && (
-        <div className="absolute -top-2 right-3 flex items-center gap-1 text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-          style={{ background: "var(--gradient-primary)", color: "white" }}
-        >
-          <Star className="w-2.5 h-2.5" />
-          Recommended
-        </div>
+        <span className="absolute top-2 right-2 inline-flex items-center gap-1 font-mono text-[9.5px] tracking-[0.08em] uppercase text-accent">
+          <Star className="w-2.5 h-2.5 fill-accent" strokeWidth={0} />
+          REC
+        </span>
       )}
 
-      <div className="flex items-start gap-3">
-        <div
-          className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-            selected
-              ? "bg-primary/20"
-              : "bg-muted/50 group-hover:bg-muted"
-          }`}
+      {selected && (
+        <motion.span
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.2, ease }}
+          className="absolute top-2 right-2 w-4 h-4 rounded-full bg-accent flex items-center justify-center"
         >
-          <Icon className={`w-4 h-4 ${selected ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-        </div>
+          <Check className="w-2.5 h-2.5 text-accent-foreground" strokeWidth={3} />
+        </motion.span>
+      )}
 
-        <div className="flex-1 min-w-0">
-          <h4 className={`text-sm font-semibold leading-tight ${selected ? "text-foreground" : "text-foreground/80"}`}>
-            {module.title}
-          </h4>
-          <p className="text-xs mt-0.5 leading-snug text-muted-foreground">
-            {module.description}
-          </p>
-        </div>
-
-        <motion.div
-          initial={false}
-          animate={selected ? { scale: 1, opacity: 1 } : { scale: 0.5, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 15 }}
-          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: "var(--gradient-primary)" }}
-        >
-          <Check className="w-3 h-3 text-white" />
-        </motion.div>
-      </div>
+      <Icon
+        className={`w-[18px] h-[18px] mb-2.5 transition-colors ${
+          selected ? "text-accent" : "text-foreground/55 group-hover:text-foreground"
+        }`}
+        strokeWidth={1.5}
+      />
+      <h4 className="text-[13px] font-semibold text-foreground leading-tight">
+        {module.title}
+      </h4>
+      <p className="mt-1 text-[11.5px] leading-[1.45] text-muted-foreground line-clamp-2">
+        {module.description}
+      </p>
     </motion.button>
   );
 };
