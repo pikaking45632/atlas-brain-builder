@@ -137,7 +137,8 @@ const AtlasChat = () => {
       {/* Agent strip */}
       {agents.length > 0 && (
         <div className="flex items-center gap-2 px-6 h-11 border-b border-border bg-card overflow-x-auto scrollbar-hide shrink-0">
-          <span className="font-mono text-[10px] tracking-[0.14em] text-muted-foreground shrink-0 mr-1">
+          <span className="font-mono text-[10px] tracking-[0.14em] text-muted-foreground shrink-0 mr-1 inline-flex items-center gap-2">
+            <span className="pulse-dot pulse-dot--sm" />
             ACTIVE AGENTS
           </span>
           {agents.map((a) => (
@@ -241,9 +242,11 @@ const AtlasChat = () => {
             <div className="w-7 h-7 rounded-md flex items-center justify-center bg-accent/10 border border-accent/20">
               <Bot className="w-3.5 h-3.5 text-accent" />
             </div>
-            <div className="bg-card border border-border rounded-lg px-4 py-3 inline-flex items-center gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
-              <span className="font-mono text-[11px] tracking-[0.1em] text-muted-foreground">THINKING…</span>
+            <div className="bg-card border border-border rounded-lg px-4 py-3 inline-flex items-center gap-3">
+              <span className="typing-dots" aria-label="Atlas is typing">
+                <span /><span /><span />
+              </span>
+              <span className="font-mono text-[11px] tracking-[0.1em] text-muted-foreground">THINKING</span>
             </div>
           </motion.div>
         )}

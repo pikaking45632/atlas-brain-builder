@@ -2,6 +2,9 @@ import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Check } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import AtlasLogo from "./AtlasLogo";
+import MagneticButton from "./MagneticButton";
+import SpotlightCard from "./SpotlightCard";
+import LiveCounter from "./LiveCounter";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -47,7 +50,7 @@ const StepWelcome = () => {
             transition={{ duration: 0.7, ease }}
           >
             <span className="eyebrow inline-flex items-center gap-2 mb-8">
-              <span className="status-dot" />
+              <span className="pulse-dot pulse-dot--sm" />
               EARLY ACCESS · INVITE ONLY
             </span>
 
@@ -88,14 +91,14 @@ const StepWelcome = () => {
             </div>
 
             <div className="mt-4 flex items-center gap-3">
-              <button
+              <MagneticButton
                 onClick={() => canContinue && setStep(3)}
                 disabled={!canContinue}
                 className="btn-primary flex-1 h-[52px] flex items-center justify-center gap-2 group"
               >
                 Get started
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-              </button>
+              </MagneticButton>
               <button className="btn-ghost h-[52px] px-5 flex items-center gap-2 text-[14px]">
                 <svg className="w-[16px] h-[16px]" viewBox="0 0 24 24">
                   <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
@@ -109,13 +112,27 @@ const StepWelcome = () => {
             </p>
           </motion.div>
 
-          <div className="mt-auto pt-16 hidden lg:block">
-            <span className="eyebrow">TRUSTED BY OPERATORS AT</span>
-            <div className="mt-4 flex items-center gap-8 text-foreground/30 font-display font-semibold text-[15px]">
-              <span>Northwind</span>
-              <span>Halcyon</span>
-              <span>Meridian</span>
-              <span>Lumen Co.</span>
+          <div className="mt-auto pt-16 hidden lg:block space-y-6">
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <LiveCounter
+                target={142}
+                tickIncrement={1}
+                tickMs={4500}
+                className="font-mono text-[15px] text-foreground font-semibold"
+              />
+              <span className="font-mono text-[11px] tracking-[0.14em] text-muted-foreground inline-flex items-center gap-2">
+                <span className="pulse-dot pulse-dot--sm" />
+                QUERIES ANSWERED IN THE LAST HOUR
+              </span>
+            </div>
+            <div>
+              <span className="eyebrow">TRUSTED BY OPERATORS AT</span>
+              <div className="mt-4 flex items-center gap-8 text-foreground/30 font-display font-semibold text-[15px]">
+                <span>Northwind</span>
+                <span>Halcyon</span>
+                <span>Meridian</span>
+                <span>Lumen Co.</span>
+              </div>
             </div>
           </div>
         </div>
@@ -128,56 +145,58 @@ const StepWelcome = () => {
             backgroundSize: "32px 32px",
           }} />
 
-          {/* Floating preview card — straddles the boundary */}
+          {/* Floating preview card — straddles the boundary, with cursor spotlight */}
           <motion.div
             initial={{ opacity: 0, x: -40, y: 20 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             transition={{ delay: 0.3, duration: 0.9, ease }}
-            className="absolute top-1/2 -translate-y-1/2 -left-16 w-[420px] corners glass-card p-6 shadow-[0_30px_60px_-20px_rgba(10,22,40,0.45)]"
+            className="absolute top-1/2 -translate-y-1/2 -left-16 w-[420px]"
           >
-            <span className="corner-tr" />
-            <span className="corner-bl" />
+            <SpotlightCard className="corners glass-card p-6 shadow-[0_30px_60px_-20px_rgba(10,22,40,0.45)]" radius={520} intensity={0.1}>
+              <span className="corner-tr" />
+              <span className="corner-bl" />
 
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-accent" />
-                </div>
-                <span className="text-[13px] font-semibold text-foreground">Atlas Finance</span>
-              </div>
-              <span className="mono-pill"><span className="status-dot" /> LIVE</span>
-            </div>
-
-            <p className="text-[13.5px] text-foreground leading-[1.55] mb-4">
-              Three invoices are 14+ days overdue. Total exposure is{" "}
-              <span className="font-mono text-[13px] text-foreground bg-accent/10 px-1 rounded">£42,180</span>.
-              Want me to draft polite follow-ups?
-            </p>
-
-            <div className="flex flex-col gap-2">
-              {[
-                { label: "Acme Ltd", val: "£18,400", days: "21d" },
-                { label: "Halcyon Group", val: "£15,200", days: "17d" },
-                { label: "Meridian Co.", val: "£8,580", days: "14d" },
-              ].map((row) => (
-                <div key={row.label} className="flex items-center justify-between text-[12.5px] py-1.5 border-b border-border last:border-0">
-                  <span className="text-foreground">{row.label}</span>
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-foreground/80">{row.val}</span>
-                    <span className="mono-pill">{row.days}</span>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-accent" />
                   </div>
+                  <span className="text-[13px] font-semibold text-foreground">Atlas Finance</span>
                 </div>
-              ))}
-            </div>
+                <span className="mono-pill"><span className="pulse-dot pulse-dot--sm" /> LIVE</span>
+              </div>
 
-            <div className="mt-5 flex items-center justify-between">
-              <button className="btn-primary text-[13px] py-2 px-4 inline-flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5" /> Draft follow-ups
-              </button>
-              <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">
-                ⌘ + ⏎
-              </span>
-            </div>
+              <p className="text-[13.5px] text-foreground leading-[1.55] mb-4">
+                Three invoices are 14+ days overdue. Total exposure is{" "}
+                <span className="font-mono text-[13px] text-foreground bg-accent/10 px-1 rounded">£42,180</span>.
+                Want me to draft polite follow-ups?
+              </p>
+
+              <div className="flex flex-col gap-2">
+                {[
+                  { label: "Acme Ltd", val: "£18,400", days: "21d" },
+                  { label: "Halcyon Group", val: "£15,200", days: "17d" },
+                  { label: "Meridian Co.", val: "£8,580", days: "14d" },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center justify-between text-[12.5px] py-1.5 border-b border-border last:border-0">
+                    <span className="text-foreground">{row.label}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-foreground/80">{row.val}</span>
+                      <span className="mono-pill">{row.days}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 flex items-center justify-between">
+                <button className="btn-primary text-[13px] py-2 px-4 inline-flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5" /> Draft follow-ups
+                </button>
+                <span className="font-mono text-[10px] tracking-[0.1em] text-muted-foreground">
+                  ⌘ + ⏎
+                </span>
+              </div>
+            </SpotlightCard>
           </motion.div>
 
           {/* Mono caption */}
