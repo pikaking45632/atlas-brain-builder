@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useOnboarding } from "@/store/onboarding";
 import AtlasLogo from "./AtlasLogo";
@@ -6,6 +7,13 @@ import { Search, CalendarDays, Settings, Command } from "lucide-react";
 
 const ThemedDashboard = () => {
   const { companyName } = useOnboarding();
+  const [shrunk, setShrunk] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShrunk(window.scrollY > 80);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <motion.div
@@ -13,15 +21,18 @@ const ThemedDashboard = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen h-screen flex flex-col bg-background"
     >
-      {/* Top Nav — solid, dense */}
-      <header className="flex items-center justify-between px-6 h-14 border-b border-border bg-card shrink-0">
+      {/* Top Nav — solid, dense, shrinks on scroll */}
+      <header
+        data-shrunk={shrunk}
+        className="nav-shell flex items-center justify-between px-6 border-b border-border bg-card shrink-0"
+      >
         <div className="flex items-center gap-8">
           <AtlasLogo />
-          <nav className="hidden md:flex items-center gap-6 ml-4">
-            <a className="link-underline text-[13px] text-foreground" data-active="true">Chat</a>
-            <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors">Knowledge</a>
-            <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors">Sources</a>
-            <a className="link-underline text-[13px] text-muted-foreground hover:text-foreground transition-colors">Team</a>
+          <nav className="hidden md:flex items-center gap-1 ml-2">
+            <a className="nav-pill text-[13px] text-foreground" data-active="true">Chat</a>
+            <a className="nav-pill text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Knowledge</a>
+            <a className="nav-pill text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Sources</a>
+            <a className="nav-pill text-[13px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Team</a>
           </nav>
         </div>
 
