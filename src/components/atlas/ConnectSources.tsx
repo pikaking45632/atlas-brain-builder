@@ -17,7 +17,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 interface Source {
   id: string;
   name: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<any>;
   categories: BusinessType[];
 }
 
