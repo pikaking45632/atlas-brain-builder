@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_silenced_until: {
+        Row: {
+          agent_id: string
+          context: string
+          created_at: string
+          id: string
+          silenced_until: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          context?: string
+          created_at?: string
+          id?: string
+          silenced_until: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          context?: string
+          created_at?: string
+          id?: string
+          silenced_until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       connected_sources: {
         Row: {
           connected_at: string
@@ -61,6 +88,63 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hired_agents: {
+        Row: {
+          agent_id: string
+          custom_name: string | null
+          desk_color: string
+          desk_lighting: string
+          desk_plant: string
+          desk_poster: string
+          detail: number
+          focus_areas: Json
+          grid_x: number
+          grid_y: number
+          hired_at: string
+          id: string
+          initiative: number
+          tone: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          custom_name?: string | null
+          desk_color?: string
+          desk_lighting?: string
+          desk_plant?: string
+          desk_poster?: string
+          detail?: number
+          focus_areas?: Json
+          grid_x?: number
+          grid_y?: number
+          hired_at?: string
+          id?: string
+          initiative?: number
+          tone?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          custom_name?: string | null
+          desk_color?: string
+          desk_lighting?: string
+          desk_plant?: string
+          desk_poster?: string
+          detail?: number
+          focus_areas?: Json
+          grid_x?: number
+          grid_y?: number
+          hired_at?: string
+          id?: string
+          initiative?: number
+          tone?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
