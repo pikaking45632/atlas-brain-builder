@@ -94,7 +94,7 @@ const StepWelcome = () => {
               <MagneticButton
                 onClick={() => canContinue && setStep(3)}
                 disabled={!canContinue}
-                className="btn-primary flex-1 h-[52px] flex items-center justify-center gap-2 group"
+                className="btn-amber flex-1 h-[52px] flex items-center justify-center gap-2 group"
               >
                 Get started
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
