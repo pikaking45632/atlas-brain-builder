@@ -1,9 +1,8 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, X, ArrowLeft, ArrowRight } from "lucide-react";
+import { FileText, X, ArrowRight, FileUp } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import DrawCheck from "./DrawCheck";
-import MagneticButton from "./MagneticButton";
 import { useOnboarding } from "@/store/onboarding";
 import { getBackendClient } from "@/lib/backend";
 
@@ -86,65 +85,71 @@ const UploadDocuments = () => {
       transition={{ duration: 0.4, ease }}
       className="min-h-screen flex flex-col bg-background"
     >
-      <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border">
+      <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border bg-card">
         <AtlasLogo />
-        <button
-          onClick={() => setStep(8)}
-          className="text-[13px] text-muted-foreground hover:text-foreground link-underline"
-        >
-          Back to dashboard
-        </button>
+        <span className="font-mono text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
+          Step 02 / 03 · Documents
+        </span>
       </header>
 
-      <div className="flex-1 max-w-[1200px] mx-auto w-full px-6 md:px-10 py-16 lg:py-20 grid lg:grid-cols-12 gap-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease }}
-          className="lg:col-span-5"
-        >
-          <span className="eyebrow">ENRICH · DOCUMENTS</span>
-          <h1 className="mt-4 text-[44px] sm:text-[52px] font-display font-bold text-foreground leading-[1.05] tracking-[-0.03em]">
-            Upload<br />your knowledge.
-          </h1>
-          <p className="mt-5 text-[16px] leading-[1.65] text-muted-foreground max-w-[420px]">
-            Drop in handbooks, policies, contracts, SOPs — anything written.
-            Atlas reads it once and remembers forever.
-          </p>
-          <div className="mt-8 space-y-2 text-[13px] text-muted-foreground">
-            <div className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-accent" /> Encrypted at rest, never shared.</div>
-            <div className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-accent" /> Re-indexed automatically when files change.</div>
-            <div className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-accent" /> Searchable from chat the moment upload completes.</div>
-          </div>
-        </motion.div>
+      <div className="flex-1 flex items-start justify-center px-6 py-16 lg:py-24">
+        <div className="w-full max-w-[640px]">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease }}
+          >
+            <h1 className="font-display text-[36px] sm:text-[40px] leading-[1.08] tracking-[-0.02em] text-foreground">
+              Atlas gets smarter the moment you upload your first document.
+            </h1>
+            <p className="mt-4 text-[15px] leading-[1.55] text-muted-foreground">
+              Drop in handbooks, policies, SOPs — anything your team would normally have to ask for. Atlas reads it once and remembers.
+            </p>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.6, ease }}
-          className="lg:col-span-7 space-y-5"
-        >
-          <button
+          <motion.button
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08, duration: 0.4, ease }}
             onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
             onDragLeave={() => setDragActive(false)}
             onDrop={handleDrop}
             onClick={openPicker}
-            className={`w-full rounded-[12px] border-2 border-dashed p-12 text-center transition-all duration-200 cursor-pointer ${
+            className={`mt-8 w-full h-[240px] rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center text-center px-6 transition-colors duration-150 ease-out cursor-pointer ${
               dragActive
-                ? "border-accent bg-accent/[0.04]"
-                : "border-border hover:border-foreground/30 bg-card"
+                ? "border-accent bg-[hsl(var(--accent-soft))]"
+                : "border-accent/40 bg-card hover:bg-[hsl(var(--accent-soft))]"
             }`}
           >
-            <Upload className={`w-7 h-7 mx-auto mb-4 ${dragActive ? "text-accent" : "text-foreground/50"}`} strokeWidth={1.5} />
-            <p className="text-[15px] font-semibold text-foreground">Drop files here, or click to browse</p>
-            <p className="mt-1.5 font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
-              PDF · DOC · DOCX · TXT · CSV · XLSX · PPTX · MD
+            <FileUp className={`w-8 h-8 mb-4 ${dragActive ? "text-accent" : "text-accent/70"}`} strokeWidth={1.5} />
+            <p className="text-[15px] font-medium text-foreground">
+              Drag PDFs, Word docs, or text files
             </p>
-          </button>
+            <p className="mt-1 text-[13px] text-text-secondary">
+              Or click to browse
+            </p>
+          </motion.button>
+
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span className="text-[12px] text-muted-foreground mr-1">Try uploading:</span>
+            {["Employee handbook", "Sales playbook", "Process docs"].map((c) => (
+              <span
+                key={c}
+                className="inline-flex items-center h-7 px-2.5 rounded-md border border-border bg-card text-[12px] text-text-secondary"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
 
           <AnimatePresence>
             {files.length > 0 && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="rounded-[12px] border border-border bg-card overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-8 rounded-[12px] border border-border bg-card overflow-hidden"
+              >
                 {files.map((file, i) => (
                   <motion.div
                     key={file.name}
@@ -153,25 +158,41 @@ const UploadDocuments = () => {
                     exit={{ opacity: 0, x: 8 }}
                     className={`flex items-center gap-3 px-4 py-3 ${i !== files.length - 1 ? "border-b border-border" : ""}`}
                   >
-                    <FileText className="w-4 h-4 text-foreground/60 shrink-0" strokeWidth={1.5} />
+                    <FileText className="w-4 h-4 text-text-secondary shrink-0" strokeWidth={1.5} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-medium text-foreground truncate">{file.name}</p>
-                      <p className="font-mono text-[11px] text-muted-foreground">{formatSize(file.size)}</p>
+                      <p className="text-[14px] font-medium text-foreground truncate">{file.name}</p>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span className="font-mono text-[11px] text-text-tertiary">{formatSize(file.size)}</span>
+                        {file.status === "uploading" && (
+                          <span className="font-mono text-[11px] text-text-secondary">· Indexing…</span>
+                        )}
+                        {file.status === "done" && (
+                          <span className="font-mono text-[11px] text-[hsl(var(--success))]">· Ready</span>
+                        )}
+                        {file.status === "error" && (
+                          <span className="font-mono text-[11px] text-destructive">· Failed</span>
+                        )}
+                      </div>
+                      {file.status === "uploading" && (
+                        <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                          <motion.div
+                            className="h-full bg-accent"
+                            initial={{ width: "10%" }}
+                            animate={{ width: ["10%", "85%"] }}
+                            transition={{ duration: 1.4, ease: "easeOut" }}
+                          />
+                        </div>
+                      )}
                     </div>
-                    {file.status === "uploading" && (
-                      <span className="typing-dots"><span /><span /><span /></span>
-                    )}
                     {file.status === "done" && (
-                      <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center">
+                      <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
                         <DrawCheck size={12} colorClass="text-accent-foreground" stroke={2.5} />
                       </span>
                     )}
-                    {file.status === "error" && (
-                      <span className="font-mono text-[11px] text-destructive">FAILED</span>
-                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); removeFile(file.name); }}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      className="text-text-tertiary hover:text-foreground transition-colors"
+                      aria-label="Remove"
                     >
                       <X className="w-4 h-4" strokeWidth={1.5} />
                     </button>
@@ -181,16 +202,22 @@ const UploadDocuments = () => {
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-3 pt-2">
-            <button onClick={() => setStep(8)} className="btn-ghost h-[48px] px-5 text-[14px] flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" /> Back
+          <div className="mt-10 flex items-center justify-between">
+            <button
+              onClick={() => setStep(10)}
+              className="text-[13px] text-text-tertiary hover:text-text-secondary transition-colors"
+            >
+              Skip for now
             </button>
-            <MagneticButton onClick={() => setStep(8)} className="btn-primary h-[48px] px-7 flex items-center gap-2 group">
-              {files.length > 0 ? `Continue · ${files.length} uploaded` : "Skip for now"}
+            <button
+              onClick={() => setStep(10)}
+              className="btn-primary inline-flex items-center gap-2 group"
+            >
+              {files.length > 0 ? `Continue with ${files.length} document${files.length > 1 ? "s" : ""}` : "Continue to team"}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </MagneticButton>
+            </button>
           </div>
-        </motion.div>
+        </div>
       </div>
     </motion.div>
   );
