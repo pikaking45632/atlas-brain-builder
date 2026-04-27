@@ -199,12 +199,16 @@
 
   .text-balance { text-wrap: balance; }
 
-  /* Brand text — solid accent. */
-  .text-gradient {
-    color: hsl(var(--accent));
-    background: none;
-    -webkit-text-fill-color: currentColor;
-  }
+   /* Brand text — solid accent. */
+   .text-gradient {
+     color: hsl(var(--accent));
+     background: none;
+     -webkit-text-fill-color: currentColor;
+   }
+ 
+   .text-gradient.text-warning {
+     color: hsl(var(--warning));
+   }
 
   /* === Surface cards === */
   .glass-panel {

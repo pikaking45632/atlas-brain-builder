@@ -57,7 +57,7 @@ const StepWelcome = () => {
             <h1 className="display-xl text-foreground text-balance">
               The workplace<br />
               that thinks<br />
-              <span className="text-gradient">with you</span><span className="caret" aria-hidden />
+               <span className="text-gradient text-warning">with you</span><span className="caret" aria-hidden />
             </h1>
 
             <p className="mt-8 text-[18px] leading-[1.6] text-muted-foreground max-w-[520px]">

@@ -129,7 +129,7 @@ const StepPricing = () => {
             <span className="eyebrow">PRICING</span>
             <h1 className="display-xl mt-4 text-balance">
               Pick a plan.<br />
-              Change your mind <span className="text-gradient">whenever</span>.
+               Change your mind <span className="text-gradient text-warning">whenever</span>.
             </h1>
           </motion.div>
           <motion.p
