@@ -564,7 +564,7 @@
     transition: opacity 0.25s ease;
     background: radial-gradient(
       var(--spot-radius, 600px) circle at var(--spot-x, 50%) var(--spot-y, 50%),
-      hsl(221 83% 53% / calc(var(--spot-intensity, 0.08))) 0%,
+      hsl(var(--accent) / calc(var(--spot-intensity, 0.08))) 0%,
       transparent 60%
     );
     z-index: 0;
