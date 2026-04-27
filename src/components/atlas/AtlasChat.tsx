@@ -180,7 +180,7 @@ const AtlasChat = () => {
               </div>
               <button
                 onClick={() => setStep(9)}
-                className="btn-primary mt-5 w-full inline-flex items-center justify-center gap-2"
+                className="btn-amber mt-5 w-full inline-flex items-center justify-center gap-2"
               >
                 <Upload className="w-4 h-4" strokeWidth={2} />
                 Upload your first document
