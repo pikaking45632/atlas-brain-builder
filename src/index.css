@@ -284,16 +284,18 @@
 
   .text-balance { text-wrap: balance; }
 
-   /* Brand text — solid accent. */
-   .text-gradient {
-     color: hsl(var(--accent));
-     background: none;
-     -webkit-text-fill-color: currentColor;
-   }
- 
-   .text-gradient.text-warning {
-     color: hsl(var(--warning));
-   }
+  /* Brand text — solid slate by default; .text-warning renders amber. */
+  .text-gradient {
+    color: hsl(var(--accent));
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+
+  .text-gradient.text-warning,
+  .text-amber {
+    color: hsl(var(--amber));
+    -webkit-text-fill-color: currentColor;
+  }
 
   /* === Surface cards === */
   .glass-panel {
@@ -400,28 +402,59 @@
   .cinematic-input::placeholder { color: hsl(var(--text-tertiary)); }
   .cinematic-input:focus {
     outline: none;
-    border-color: hsl(var(--accent));
-    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.18);
+    border-color: hsl(var(--amber));
+    box-shadow: 0 0 0 3px hsl(var(--amber) / 0.3);
   }
 
-  /* === Buttons === */
+  /* === Buttons ===
+     .btn-primary = slate (default 90% of CTAs)
+     .btn-amber   = activation only (uploads, invites, trial) */
   .btn-primary {
-    background: hsl(var(--accent));
-    color: hsl(var(--accent-foreground));
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     font-weight: 500;
     font-size: 14px;
     padding: 12px 20px;
     border-radius: 8px;
-    transition: background 0.15s ease-out, box-shadow 0.15s ease-out;
+    transition: background 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
     position: relative;
     overflow: hidden;
   }
   .btn-primary:hover {
-    background: hsl(var(--accent-hover));
+    background: hsl(var(--primary-hover));
     box-shadow: var(--shadow-sm);
   }
-  .btn-primary:active { background: hsl(var(--accent-hover)); }
+  .btn-primary:active {
+    background: hsl(var(--primary-active));
+    transform: scale(0.98);
+  }
   .btn-primary:disabled {
+    background: hsl(var(--muted));
+    color: hsl(var(--text-tertiary));
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-amber {
+    background: hsl(var(--amber));
+    color: hsl(var(--amber-foreground));
+    font-weight: 500;
+    font-size: 14px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    transition: background 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-amber:hover {
+    background: hsl(var(--amber-hover));
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-amber:active {
+    background: hsl(var(--amber-active));
+    transform: scale(0.98);
+  }
+  .btn-amber:disabled {
     background: hsl(var(--muted));
     color: hsl(var(--text-tertiary));
     cursor: not-allowed;
