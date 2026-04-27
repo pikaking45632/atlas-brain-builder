@@ -3,11 +3,12 @@ import { motion } from "framer-motion";
 import { useOnboarding } from "@/store/onboarding";
 import AtlasLogo from "./AtlasLogo";
 import AtlasChat from "./AtlasChat";
-import { Search, CalendarDays, Settings, Command } from "lucide-react";
+import { Search, CalendarDays, Settings, Command, ArrowRight, X } from "lucide-react";
 
 const ThemedDashboard = () => {
-  const { companyName } = useOnboarding();
+  const { companyName, setStep } = useOnboarding();
   const [shrunk, setShrunk] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setShrunk(window.scrollY > 80);
@@ -21,6 +22,26 @@ const ThemedDashboard = () => {
       animate={{ opacity: 1 }}
       className="min-h-screen h-screen flex flex-col bg-background"
     >
+      {/* Activation banner — invite team */}
+      {!bannerDismissed && (
+        <div className="h-10 flex items-center justify-between px-6 bg-[hsl(var(--accent-soft))] border-b border-border shrink-0">
+          <button
+            onClick={() => setStep(10)}
+            className="text-[13px] text-foreground hover:text-accent transition-colors inline-flex items-center gap-1.5 group"
+          >
+            Atlas gets sharper with your team. Invite colleagues
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+          </button>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="text-text-tertiary hover:text-foreground transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Top Nav — solid, dense, shrinks on scroll */}
       <header
         data-shrunk={shrunk}

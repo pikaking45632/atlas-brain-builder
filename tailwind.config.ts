@@ -14,20 +14,21 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['Sora', 'Inter', 'sans-serif'],
-        sora: ['Sora', 'sans-serif'],
+        display: ['Inter Tight', 'Inter', 'sans-serif'],
+        sora: ['Inter Tight', 'Inter', 'sans-serif'],
+        tight: ['Inter Tight', 'Inter', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         sans: ['Inter', 'sans-serif'],
         inter: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       fontSize: {
-        h1: ['48px', { lineHeight: '1.15', letterSpacing: '-0.02em', fontWeight: '700' }],
-        h2: ['36px', { lineHeight: '1.2', fontWeight: '600' }],
-        h3: ['24px', { lineHeight: '1.3', fontWeight: '600' }],
-        h4: ['18px', { lineHeight: '1.4', fontWeight: '600' }],
-        body: ['16px', { lineHeight: '1.7', fontWeight: '400' }],
-        label: ['13px', { lineHeight: '1.4', letterSpacing: '0.04em', fontWeight: '500' }],
+        h1: ['48px', { lineHeight: '1.04', letterSpacing: '-0.02em',  fontWeight: '600' }],
+        h2: ['32px', { lineHeight: '1.1',  letterSpacing: '-0.015em', fontWeight: '600' }],
+        h3: ['22px', { lineHeight: '1.25', letterSpacing: '-0.01em',  fontWeight: '600' }],
+        h4: ['17px', { lineHeight: '1.35', fontWeight: '500' }],
+        body: ['15px', { lineHeight: '1.55', fontWeight: '400' }],
+        label: ['13px', { lineHeight: '1.4', fontWeight: '500' }],
       },
       maxWidth: {
         content: '1200px',
@@ -58,6 +59,8 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          soft: "hsl(var(--accent-soft))",
+          hover: "hsl(var(--accent-hover))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -93,16 +96,19 @@ export default {
         },
       },
       borderRadius: {
-        sm: "8px",
-        md: "12px",
-        lg: "12px",
+        sm: "6px",
+        md: "8px",
+        lg: "10px",
         xl: "12px",
-        "2xl": "12px",
-        full: "99px",
+        "2xl": "16px",
+        full: "999px",
       },
       boxShadow: {
-        card: "0 1px 4px rgba(10,22,40,0.06)",
-        "card-hover": "0 4px 16px rgba(10,22,40,0.10)",
+        none: "none",
+        sm: "0 1px 2px rgba(14,26,26,0.04), 0 1px 3px rgba(14,26,26,0.04)",
+        md: "0 4px 12px -2px rgba(14,26,26,0.06), 0 2px 4px -2px rgba(14,26,26,0.04)",
+        card: "none",
+        "card-hover": "0 4px 12px -2px rgba(14,26,26,0.08)",
       },
       keyframes: {
         "accordion-down": {
