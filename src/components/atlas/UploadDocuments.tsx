@@ -117,11 +117,11 @@ const UploadDocuments = () => {
             onClick={openPicker}
             className={`mt-8 w-full h-[240px] rounded-[16px] border-2 border-dashed flex flex-col items-center justify-center text-center px-6 transition-colors duration-150 ease-out cursor-pointer ${
               dragActive
-                ? "border-accent bg-[hsl(var(--accent-soft))]"
-                : "border-accent/40 bg-card hover:bg-[hsl(var(--accent-soft))]"
+                ? "border-amber bg-amber-soft"
+                : "border-[hsl(var(--amber)/0.4)] bg-card hover:bg-amber-soft"
             }`}
           >
-            <FileUp className={`w-8 h-8 mb-4 ${dragActive ? "text-accent" : "text-accent/70"}`} strokeWidth={1.5} />
+            <FileUp className={`w-8 h-8 mb-4 ${dragActive ? "text-amber" : "text-[hsl(var(--amber)/0.7)]"}`} strokeWidth={1.5} />
             <p className="text-[15px] font-medium text-foreground">
               Drag PDFs, Word docs, or text files
             </p>
@@ -211,7 +211,7 @@ const UploadDocuments = () => {
             </button>
             <button
               onClick={() => setStep(10)}
-              className="btn-primary inline-flex items-center gap-2 group"
+              className="btn-amber inline-flex items-center gap-2 group"
             >
               {files.length > 0 ? `Continue with ${files.length} document${files.length > 1 ? "s" : ""}` : "Continue to team"}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />

@@ -62,6 +62,15 @@ export default {
           soft: "hsl(var(--accent-soft))",
           hover: "hsl(var(--accent-hover))",
         },
+        amber: {
+          DEFAULT: "hsl(var(--amber))",
+          foreground: "hsl(var(--amber-foreground))",
+          hover: "hsl(var(--amber-hover))",
+          active: "hsl(var(--amber-active))",
+          soft: "hsl(var(--amber-soft))",
+          "soft-foreground": "hsl(var(--amber-soft-foreground))",
+          border: "hsl(var(--amber-border))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -78,6 +87,10 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
         },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+        },
+        "border-strong": "hsl(var(--border-strong))",
         surface: {
           elevated: "hsl(var(--surface-elevated))",
           glass: "hsl(var(--surface-glass))",

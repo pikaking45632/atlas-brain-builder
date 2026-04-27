@@ -158,7 +158,7 @@ const InviteColleagues = () => {
             </button>
             <button
               onClick={() => setStep(12)}
-              className="btn-primary inline-flex items-center gap-2 group"
+              className="btn-amber inline-flex items-center gap-2 group"
             >
               {filledCount > 0 ? `Send ${filledCount} invite${filledCount > 1 ? "s" : ""} and continue` : "Send invites and continue"}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />

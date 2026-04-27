@@ -24,13 +24,13 @@ const ThemedDashboard = () => {
     >
       {/* Activation banner — invite team */}
       {!bannerDismissed && (
-        <div className="h-10 flex items-center justify-between px-6 bg-[hsl(var(--accent-soft))] border-b border-border shrink-0">
+        <div className="h-10 flex items-center justify-between px-6 bg-amber-soft border-b border-amber-border shrink-0">
           <button
             onClick={() => setStep(10)}
-            className="text-[13px] text-foreground hover:text-accent transition-colors inline-flex items-center gap-1.5 group"
+            className="text-[13px] text-foreground hover:text-amber transition-colors inline-flex items-center gap-1.5 group"
           >
             Atlas gets sharper with your team. Invite colleagues
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="w-3.5 h-3.5 text-amber transition-transform group-hover:translate-x-0.5" />
           </button>
           <button
             onClick={() => setBannerDismissed(true)}
