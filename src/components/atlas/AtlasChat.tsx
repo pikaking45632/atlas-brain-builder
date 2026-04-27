@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, ChevronDown } from "lucide-react";
+import { Send, Bot, User, Loader2, ChevronDown, Upload, FileText } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import { buildSystemPrompt, getActiveAgents } from "@/data/agent-prompts";
 import ReactMarkdown from "react-markdown";
@@ -73,7 +73,7 @@ async function streamChat({
 }
 
 const AtlasChat = () => {
-  const { selectedModules, companyName, businessType } = useOnboarding();
+  const { selectedModules, companyName, businessType, setStep } = useOnboarding();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -161,36 +161,50 @@ const AtlasChat = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease }}
-            className="flex flex-col items-center justify-center text-center pt-12"
+            className="pt-8"
           >
-            <div className="corners corners-subtle p-6 mb-8">
-              <span className="corner-tr" />
-              <span className="corner-bl" />
-              <Bot className="w-7 h-7 text-foreground" strokeWidth={1.5} />
+            {/* Upload-first activation card */}
+            <div className="rounded-[12px] border border-border bg-card p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-md bg-[hsl(var(--accent-soft))] flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-accent" strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-[18px] font-medium text-foreground tracking-[-0.01em]">
+                    Atlas needs context to help you
+                  </h3>
+                  <p className="mt-1.5 text-[14px] text-text-secondary leading-[1.55]">
+                    Without documents, Atlas can answer general questions but won't know about your business.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setStep(9)}
+                className="btn-primary mt-5 w-full inline-flex items-center justify-center gap-2"
+              >
+                <Upload className="w-4 h-4" strokeWidth={2} />
+                Upload your first document
+              </button>
             </div>
-            <span className="eyebrow mb-3">READY</span>
-            <h2 className="text-[36px] font-display font-semibold text-foreground tracking-[-0.03em] leading-[1.05]">
-              What should we<br />work on today?
-            </h2>
-            <p className="mt-4 text-[14.5px] text-muted-foreground max-w-md">
-              {agents.length > 0
-                ? `${agents.length} specialist agent${agents.length > 1 ? "s" : ""} loaded. Ask anything — Atlas routes the question for you.`
-                : "Ask me anything about your business."}
-            </p>
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-[560px]">
-              {suggestions.slice(0, 4).map((s, i) => (
-                <motion.button
-                  key={s}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.05, ease }}
-                  onClick={() => send(s)}
-                  className="text-left px-4 py-3 rounded-md border border-border bg-card text-[13px] text-foreground hover:border-foreground/30 hover:bg-card-hover transition-all duration-200 flex items-center justify-between group"
-                >
-                  <span>{s}</span>
-                  <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-muted-foreground group-hover:text-foreground transition-all duration-200 group-hover:translate-x-0.5" />
-                </motion.button>
-              ))}
+
+            {/* Secondary: contextual prompts */}
+            <div className="mt-10">
+              <p className="text-[13px] text-text-tertiary mb-3">Or try asking</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {suggestions.slice(0, 4).map((s, i) => (
+                  <motion.button
+                    key={s}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 + i * 0.04, ease }}
+                    onClick={() => send(s)}
+                    className="text-left px-4 py-3 rounded-md border border-border bg-card text-[13px] text-foreground hover:border-foreground/20 hover:bg-card-hover hover:-translate-y-px transition-all duration-150 ease-out flex items-center justify-between group"
+                  >
+                    <span>{s}</span>
+                    <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-text-tertiary group-hover:text-foreground transition-all duration-150 group-hover:translate-x-0.5" />
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         )}
