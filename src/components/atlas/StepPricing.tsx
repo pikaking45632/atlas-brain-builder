@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowLeft, Check, Minus } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import AtlasLogo from "./AtlasLogo";
 import MagneticButton from "./MagneticButton";
 import SpotlightCard from "./SpotlightCard";
+import ContactSalesModal from "./ContactSalesModal";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -85,12 +87,13 @@ const cellRender = (v: string | boolean, idx: number) => {
 
 const StepPricing = () => {
   const { plan, setField, setStep } = useOnboarding();
+  const [contactOpen, setContactOpen] = useState(false);
 
   const handleSelect = (planId: string) => setField("plan", planId);
 
   const handleContinue = () => {
     if (plan === "enterprise") {
-      window.open("mailto:sales@atlas.ai?subject=Enterprise%20Inquiry", "_blank");
+      setContactOpen(true);
       return;
     }
     if (plan) setStep(2);
@@ -313,6 +316,11 @@ const StepPricing = () => {
           </p>
         </motion.div>
       </section>
+      <ContactSalesModal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        source="pricing_enterprise"
+      />
     </motion.div>
   );
 };
