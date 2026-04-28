@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Copy, Check } from "lucide-react";
+import { ArrowRight, Copy, Check, Loader2 } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
 import { useToast } from "@/hooks/use-toast";
@@ -8,12 +8,16 @@ import { getBackendClient } from "@/lib/backend";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+const isValidEmail = (e: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()) && e.trim().length < 255;
+
 const InviteColleagues = () => {
-  const { companyName, setStep } = useOnboarding();
+  const { companyName, setStep, setInvitesSent, invitesSentCount } = useOnboarding();
   const { toast } = useToast();
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [rows, setRows] = useState<{ email: string; role: "Member" | "Admin" }[]>([
     { email: "", role: "Member" },
     { email: "", role: "Member" },
@@ -51,7 +55,82 @@ const InviteColleagues = () => {
   const updateRow = (idx: number, patch: Partial<{ email: string; role: "Member" | "Admin" }>) =>
     setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
 
-  const filledCount = rows.filter((r) => r.email.trim()).length;
+  const validRows = rows.filter((r) => isValidEmail(r.email));
+  const filledCount = validRows.length;
+  const returnTo = sessionStorage.getItem("invite_return_to");
+
+  const handleSend = async () => {
+    if (sending) return;
+    setSending(true);
+
+    try {
+      const client = getBackendClient();
+      if (!client) {
+        toast({ title: "Backend unavailable", variant: "destructive" });
+        return;
+      }
+
+      // If they typed valid emails, send invites via the Edge Function.
+      if (filledCount > 0) {
+        const { data, error } = await client.functions.invoke("send-invites", {
+          body: {
+            invitations: validRows.map((r) => ({
+              email: r.email.trim().toLowerCase(),
+              role: r.role,
+            })),
+            origin: window.location.origin,
+          },
+        });
+
+        if (error) throw new Error(error.message || "Could not send invites");
+        if (data && (data as any).error) throw new Error((data as any).error);
+
+        const sent = (data as any)?.sent ?? filledCount;
+        const failed = (data as any)?.failed ?? 0;
+
+        setInvitesSent(invitesSentCount + sent);
+
+        if (failed > 0) {
+          toast({
+            title: `${sent} sent, ${failed} failed`,
+            description: "Check console for details.",
+          });
+        } else {
+          toast({
+            title: `${sent} invite${sent > 1 ? "s" : ""} sent`,
+            description: "Your colleagues will receive a join link.",
+          });
+        }
+      }
+
+      // If user came here from the workspace banner, return them.
+      if (returnTo) {
+        sessionStorage.removeItem("invite_return_to");
+        window.location.href = returnTo;
+        return;
+      }
+
+      // Otherwise, advance the onboarding flow.
+      setStep(10);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't send invites",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const skip = () => {
+    if (returnTo) {
+      sessionStorage.removeItem("invite_return_to");
+      window.location.href = returnTo;
+      return;
+    }
+    setStep(10);
+  };
 
   return (
     <motion.div
@@ -63,8 +142,8 @@ const InviteColleagues = () => {
     >
       <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border bg-card">
         <AtlasLogo />
-        <span className="font-mono text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
-          Step 03 / 03 · Team
+        <span className="font-mono text-[11px] tracking-[0.12em] text-text-tertiary uppercase">
+          Step 02 / 03 · Team
         </span>
       </header>
 
@@ -78,7 +157,7 @@ const InviteColleagues = () => {
             <h1 className="font-display text-[36px] sm:text-[40px] leading-[1.08] tracking-[-0.02em] text-foreground">
               Atlas works better with your team in it.
             </h1>
-            <p className="mt-4 text-[15px] leading-[1.55] text-muted-foreground">
+            <p className="mt-4 text-[15px] leading-[1.55] text-text-secondary">
               Each colleague adds knowledge Atlas can connect across.
             </p>
           </motion.div>
@@ -101,7 +180,7 @@ const InviteColleagues = () => {
                 <select
                   value={row.role}
                   onChange={(e) => updateRow(idx, { role: e.target.value as "Member" | "Admin" })}
-                  className="h-[44px] px-3 pr-8 rounded-md border border-border bg-card text-[13px] text-foreground focus:outline-none focus:border-accent focus:ring-[3px] focus:ring-accent/30 transition-[border-color,box-shadow] duration-150"
+                  className="h-[44px] px-3 pr-8 rounded-md border border-border bg-card text-[13px] text-foreground focus:outline-none focus:border-amber focus:ring-[3px] focus:ring-amber/30 transition-[border-color,box-shadow] duration-150"
                 >
                   <option>Member</option>
                   <option>Admin</option>
@@ -134,7 +213,7 @@ const InviteColleagues = () => {
                       animate={{ x: 0, opacity: 1 }}
                       exit={{ x: 32, opacity: 0 }}
                       transition={{ duration: 0.18, ease }}
-                      className="absolute inset-0 inline-flex items-center justify-center gap-1.5 bg-accent text-accent-foreground"
+                      className="absolute inset-0 inline-flex items-center justify-center gap-1.5 bg-foreground text-background"
                     >
                       <Check className="w-3.5 h-3.5" /> Copied
                     </motion.span>
@@ -151,17 +230,27 @@ const InviteColleagues = () => {
 
           <div className="mt-10 flex items-center justify-between">
             <button
-              onClick={() => setStep(12)}
+              onClick={skip}
               className="text-[13px] text-text-tertiary hover:text-text-secondary transition-colors"
             >
               I'll do this later
             </button>
             <button
-              onClick={() => setStep(12)}
-              className="btn-amber inline-flex items-center gap-2 group"
+              onClick={handleSend}
+              disabled={sending}
+              className="btn-amber inline-flex items-center gap-2 group disabled:opacity-60"
             >
-              {filledCount > 0 ? `Send ${filledCount} invite${filledCount > 1 ? "s" : ""} and continue` : "Send invites and continue"}
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+              {sending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                <>
+                  {filledCount > 0 ? `Send ${filledCount} invite${filledCount > 1 ? "s" : ""} and continue` : "Continue without inviting"}
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                </>
+              )}
             </button>
           </div>
         </div>
