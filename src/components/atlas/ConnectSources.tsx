@@ -81,7 +81,7 @@ const ConnectSources = () => {
     >
       <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border">
         <AtlasLogo />
-        <button onClick={() => setStep(8)} className="text-[13px] text-muted-foreground hover:text-foreground link-underline">
+        <button onClick={() => setStep(11)} className="text-[13px] text-muted-foreground hover:text-foreground link-underline">
           Back to dashboard
         </button>
       </header>
@@ -156,10 +156,10 @@ const ConnectSources = () => {
         </motion.div>
 
         <div className="flex items-center gap-3 pt-4">
-          <button onClick={() => setStep(8)} className="btn-ghost h-[48px] px-5 text-[14px] flex items-center gap-2">
+          <button onClick={() => setStep(11)} className="btn-ghost h-[48px] px-5 text-[14px] flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <MagneticButton onClick={() => setStep(8)} className="btn-primary h-[48px] px-7 flex items-center gap-2 group">
+          <MagneticButton onClick={() => setStep(11)} className="btn-primary h-[48px] px-7 flex items-center gap-2 group">
             {connectedSources.length > 0 ? `Continue · ${connectedSources.length} connected` : "Skip for now"}
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </MagneticButton>
