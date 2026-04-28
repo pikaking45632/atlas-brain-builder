@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
-import { Shield, ArrowRight, AlertCircle } from "lucide-react";
+import { Shield, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,27 +39,35 @@ const JoinPage = () => {
         return;
       }
 
-      const { data, error: fetchError } = await client
-        .from("invitations")
-        .select("company_name, email_domain, uses, max_uses, expires_at")
-        .eq("invite_code", code)
-        .maybeSingle();
+      // Use the secure Edge Function instead of querying invitations directly.
+      // The public RLS policy that allowed direct querying has been removed.
+      try {
+        const { data, error: fnError } = await client.functions.invoke("invitation-lookup", {
+          body: { code },
+        });
 
-      if (fetchError || !data) {
-        setError("This invite link is invalid or has expired.");
-      } else if (data.uses >= (data.max_uses || 50)) {
-        setError("This invite link has reached its maximum uses.");
-      } else if (data.expires_at && new Date(data.expires_at) < new Date()) {
-        setError("This invite link has expired.");
-      } else {
-        setInvite({ company_name: data.company_name, email_domain: data.email_domain });
+        if (fnError) throw new Error(fnError.message || "Lookup failed");
+        if (data && (data as any).error) {
+          setError((data as any).error);
+        } else if (data && (data as any).invitation) {
+          setInvite({
+            company_name: (data as any).invitation.company_name,
+            email_domain: (data as any).invitation.email_domain,
+          });
+        } else {
+          setError("This invite link is invalid or has expired.");
+        }
+      } catch (err: any) {
+        setError(err?.message || "Could not look up this invitation.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchInvite();
   }, [code]);
 
-  const emailDomainMatches = invite && email.includes("@") && email.split("@")[1] === invite.email_domain;
+  const emailDomainMatches =
+    invite && email.includes("@") && email.split("@")[1] === invite.email_domain;
 
   const handleSignUp = async () => {
     const client = getBackendClient();
@@ -86,15 +94,14 @@ const JoinPage = () => {
           invite_code: code,
         });
 
-        await client
-          .from("invitations")
-          .select("uses")
-          .eq("invite_code", code!)
-          .single();
+        // Atomic, server-side uses increment.
+        if (code) {
+          await client.rpc("increment_invitation_uses", { p_invite_code: code });
+        }
       }
 
       toast({
-        title: "Account created!",
+        title: "Account created",
         description: "Please check your email to verify your account.",
       });
     } catch (err: any) {
@@ -107,11 +114,7 @@ const JoinPage = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <motion.div
-          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-        />
+        <Loader2 className="w-6 h-6 text-text-secondary animate-spin" />
       </div>
     );
   }
@@ -121,9 +124,9 @@ const JoinPage = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h1 className="text-2xl font-display font-bold text-foreground">Invalid Invite</h1>
-          <p className="text-muted-foreground">{error}</p>
-          <Button onClick={() => navigate("/")}>Go to Atlas</Button>
+          <h1 className="text-[24px] font-display font-semibold text-foreground tracking-[-0.015em]">Invalid invite</h1>
+          <p className="text-[14px] text-text-secondary">{error}</p>
+          <Button onClick={() => navigate("/")} className="btn-primary">Go to Atlas</Button>
         </div>
       </div>
     );
@@ -142,21 +145,21 @@ const JoinPage = () => {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-3">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-400 flex items-center justify-center mx-auto shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="w-14 h-14 rounded-2xl bg-foreground flex items-center justify-center mx-auto">
+              <Shield className="w-6 h-6 text-background" strokeWidth={1.75} />
             </div>
-            <h1 className="text-3xl font-display font-bold text-foreground">
+            <h1 className="text-[28px] font-display font-semibold text-foreground tracking-[-0.018em] leading-[1.1]">
               Join {invite?.company_name}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-[14px] text-text-secondary">
               Create your Atlas account using your{" "}
-              <span className="font-semibold text-foreground">@{invite?.email_domain}</span> work email.
+              <span className="font-mono text-foreground">@{invite?.email_domain}</span> work email.
             </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Work email</label>
+              <label className="text-[12.5px] font-medium text-text-secondary">Work email</label>
               <Input
                 type="email"
                 placeholder={`you@${invite?.email_domain}`}
@@ -164,7 +167,7 @@ const JoinPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
               />
               {email && !emailDomainMatches && (
-                <p className="text-xs text-destructive flex items-center gap-1">
+                <p className="text-[11.5px] text-destructive flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   Email must be @{invite?.email_domain}
                 </p>
@@ -172,7 +175,7 @@ const JoinPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Password</label>
+              <label className="text-[12.5px] font-medium text-text-secondary">Password</label>
               <Input
                 type="password"
                 placeholder="Min 6 characters"
@@ -182,7 +185,7 @@ const JoinPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Job title *</label>
+              <label className="text-[12.5px] font-medium text-text-secondary">Job title</label>
               <Input
                 placeholder="e.g. Operations Manager"
                 value={jobTitle}
@@ -191,7 +194,7 @@ const JoinPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Key activities</label>
+              <label className="text-[12.5px] font-medium text-text-secondary">Key activities</label>
               <Input
                 placeholder="e.g. Managing schedules, procurement"
                 value={keyActivities}
@@ -200,11 +203,11 @@ const JoinPage = () => {
             </div>
 
             <Button
-              className="w-full gap-2"
+              className="w-full gap-2 btn-amber"
               disabled={!emailDomainMatches || password.length < 6 || !jobTitle.trim() || submitting}
               onClick={handleSignUp}
             >
-              {submitting ? "Creating account..." : "Create account"}
+              {submitting ? "Creating account…" : "Create account"}
               {!submitting && <ArrowRight className="w-4 h-4" />}
             </Button>
           </div>

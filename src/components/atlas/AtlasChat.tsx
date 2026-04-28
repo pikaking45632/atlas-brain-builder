@@ -179,7 +179,7 @@ const AtlasChat = () => {
                 </div>
               </div>
               <button
-                onClick={() => setStep(9)}
+                onClick={() => window.location.assign("/get-started")}
                 className="btn-amber mt-5 w-full inline-flex items-center justify-center gap-2"
               >
                 <Upload className="w-4 h-4" strokeWidth={2} />

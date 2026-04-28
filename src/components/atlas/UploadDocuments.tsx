@@ -16,7 +16,7 @@ interface UploadedFile {
 }
 
 const UploadDocuments = () => {
-  const { setStep } = useOnboarding();
+  const { setStep, markUploaded } = useOnboarding();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
@@ -43,13 +43,16 @@ const UploadDocuments = () => {
         setFiles((prev) =>
           prev.map((f) => (f.name === file.name && f.status === "uploading" ? { ...f, status: "done", path: filePath } : f)),
         );
+        // Flag the workspace as having content. Used to switch off the
+        // amber upload banner in the dashboard.
+        markUploaded();
       } catch {
         setFiles((prev) =>
           prev.map((f) => (f.name === file.name && f.status === "uploading" ? { ...f, status: "error" } : f)),
         );
       }
     }
-  }, []);
+  }, [markUploaded]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -77,6 +80,11 @@ const UploadDocuments = () => {
     input.click();
   };
 
+  // Onboarding step 8 → 9 (invite). Skip is allowed but de-emphasised.
+  const advance = () => setStep(9);
+
+  const successCount = files.filter((f) => f.status === "done").length;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -87,8 +95,8 @@ const UploadDocuments = () => {
     >
       <header className="flex items-center justify-between px-6 md:px-10 h-16 border-b border-border bg-card">
         <AtlasLogo />
-        <span className="font-mono text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
-          Step 02 / 03 · Documents
+        <span className="font-mono text-[11px] tracking-[0.12em] text-text-tertiary uppercase">
+          Step 01 / 03 · Documents
         </span>
       </header>
 
@@ -102,7 +110,7 @@ const UploadDocuments = () => {
             <h1 className="font-display text-[36px] sm:text-[40px] leading-[1.08] tracking-[-0.02em] text-foreground">
               Atlas gets smarter the moment you upload your first document.
             </h1>
-            <p className="mt-4 text-[15px] leading-[1.55] text-muted-foreground">
+            <p className="mt-4 text-[15px] leading-[1.55] text-text-secondary">
               Drop in handbooks, policies, SOPs — anything your team would normally have to ask for. Atlas reads it once and remembers.
             </p>
           </motion.div>
@@ -131,7 +139,7 @@ const UploadDocuments = () => {
           </motion.button>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
-            <span className="text-[12px] text-muted-foreground mr-1">Try uploading:</span>
+            <span className="text-[12px] text-text-tertiary mr-1">Try uploading:</span>
             {["Employee handbook", "Sales playbook", "Process docs"].map((c) => (
               <span
                 key={c}
@@ -176,7 +184,7 @@ const UploadDocuments = () => {
                       {file.status === "uploading" && (
                         <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
                           <motion.div
-                            className="h-full bg-accent"
+                            className="h-full bg-amber"
                             initial={{ width: "10%" }}
                             animate={{ width: ["10%", "85%"] }}
                             transition={{ duration: 1.4, ease: "easeOut" }}
@@ -185,8 +193,8 @@ const UploadDocuments = () => {
                       )}
                     </div>
                     {file.status === "done" && (
-                      <span className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
-                        <DrawCheck size={12} colorClass="text-accent-foreground" stroke={2.5} />
+                      <span className="w-5 h-5 rounded-full bg-success flex items-center justify-center shrink-0">
+                        <DrawCheck size={12} colorClass="text-success-foreground" stroke={2.5} />
                       </span>
                     )}
                     <button
@@ -204,16 +212,19 @@ const UploadDocuments = () => {
 
           <div className="mt-10 flex items-center justify-between">
             <button
-              onClick={() => setStep(10)}
+              onClick={advance}
               className="text-[13px] text-text-tertiary hover:text-text-secondary transition-colors"
             >
               Skip for now
             </button>
             <button
-              onClick={() => setStep(10)}
-              className="btn-amber inline-flex items-center gap-2 group"
+              onClick={advance}
+              disabled={files.some((f) => f.status === "uploading")}
+              className="btn-amber inline-flex items-center gap-2 group disabled:opacity-60"
             >
-              {files.length > 0 ? `Continue with ${files.length} document${files.length > 1 ? "s" : ""}` : "Continue to team"}
+              {successCount > 0
+                ? `Continue with ${successCount} document${successCount > 1 ? "s" : ""}`
+                : "Continue without uploading"}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
