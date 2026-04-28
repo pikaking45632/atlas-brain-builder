@@ -62,6 +62,51 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_submissions: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          handled: boolean
+          handled_at: string | null
+          id: string
+          ip_hash: string | null
+          message: string | null
+          name: string
+          source: string | null
+          team_size: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          handled?: boolean
+          handled_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          name: string
+          source?: string | null
+          team_size?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          handled?: boolean
+          handled_at?: string | null
+          id?: string
+          ip_hash?: string | null
+          message?: string | null
+          name?: string
+          source?: string | null
+          team_size?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -185,6 +230,50 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_emails: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invitation_id: string
+          invited_by: string
+          recipient_email: string
+          role: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invitation_id: string
+          invited_by: string
+          recipient_email: string
+          role?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          invited_by?: string
+          recipient_email?: string
+          role?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_emails_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           company_name: string | null
@@ -223,7 +312,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_invitation_uses: {
+        Args: { p_invite_code: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
