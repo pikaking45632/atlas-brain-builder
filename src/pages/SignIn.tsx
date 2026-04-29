@@ -29,7 +29,7 @@ const SignIn = () => {
     if (appleLoading) return;
     setAppleLoading(true);
     setError("");
-    const result = await lovable.auth.signInWithOAuth("apple", {
+    const result: any = await lovable.auth.signInWithOAuth("apple", {
       redirect_uri: window.location.origin + next,
     });
     if (result.error) {
