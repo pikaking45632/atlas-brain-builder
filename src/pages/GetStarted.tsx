@@ -31,13 +31,23 @@ const GetStarted = () => {
     }
   }, [step, user, initialized, navigate]);
 
-  // If the user already has a workspace, send them straight to /app —
-  // they're not in onboarding any more, they're returning to use the product.
+  // RETURNING USER REDIRECT — only fires on step 1 (a fresh /get-started visit).
+  //
+  // Important: we deliberately do NOT redirect mid-flow when a workspace gets
+  // created. UploadDocuments and InviteColleagues lazily create the workspace
+  // via ensureWorkspace() — if this effect fired the moment a workspace
+  // appeared, it would bounce the user to /app mid-upload, and ProtectedRoute
+  // (which reads from a stale auth state) might bounce them back to /sign-in.
+  //
+  // Only auto-redirect when the user is at step 1 (or earlier) — meaning
+  // they're genuinely returning to /get-started rather than progressing
+  // through it.
   useEffect(() => {
-    if (initialized && user && workspace) {
+    if (!initialized) return;
+    if (user && workspace && step <= 1) {
       navigate("/app", { replace: true });
     }
-  }, [initialized, user, workspace, navigate]);
+  }, [initialized, user, workspace, step, navigate]);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
