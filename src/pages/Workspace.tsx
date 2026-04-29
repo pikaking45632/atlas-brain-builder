@@ -1,33 +1,51 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Search,
   CalendarDays,
   Settings,
   Command,
   Upload,
-  Users,
   X,
   Plus,
   FileText,
   ArrowRight,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getBackendClient } from "@/lib/backend";
 import { useToast } from "@/hooks/use-toast";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import AtlasChat from "@/components/atlas/AtlasChat";
 
+interface DocRow {
+  id: string;
+  file_name: string;
+  file_size: number | null;
+  user_id: string;
+}
+
+interface MemberRow {
+  user_id: string;
+  role: string;
+}
+
 const Workspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { companyName, hasUploadedDocuments, invitesSentCount, markUploaded } = useOnboarding();
+  const { user, workspace, signOut } = useAuth();
+  const { hasUploadedDocuments, invitesSentCount, markUploaded } = useOnboarding();
+
   const [shrunk, setShrunk] = useState(false);
   const [inviteBannerDismissed, setInviteBannerDismissed] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  // Documents from Supabase
-  const [documents, setDocuments] = useState<Array<{ id: string; file_name: string; file_size: number | null }>>([]);
+  const [documents, setDocuments] = useState<DocRow[]>([]);
+  const [members, setMembers] = useState<MemberRow[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
 
   // Sticky-nav scroll-shrink
@@ -37,17 +55,24 @@ const Workspace = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Load documents on mount + after upload
+  // Click-outside the user menu
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    if (menuOpen) document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [menuOpen]);
+
   const refreshDocuments = async () => {
     const client = getBackendClient();
-    if (!client) { setLoadingDocs(false); return; }
+    if (!client || !workspace?.id) { setLoadingDocs(false); return; }
     try {
-      const { data: { user } } = await client.auth.getUser();
-      if (!user) { setLoadingDocs(false); return; }
+      // Workspace-scoped: every member sees every document in this workspace.
       const { data } = await client
         .from("documents")
-        .select("id, file_name, file_size")
-        .eq("user_id", user.id)
+        .select("id, file_name, file_size, user_id")
+        .eq("workspace_id", workspace.id)
         .order("created_at", { ascending: false });
       setDocuments(data || []);
       if ((data || []).length > 0) markUploaded();
@@ -56,19 +81,30 @@ const Workspace = () => {
     }
   };
 
+  const refreshMembers = async () => {
+    const client = getBackendClient();
+    if (!client || !workspace?.id) return;
+    const { data } = await client
+      .from("workspace_members")
+      .select("user_id, role")
+      .eq("workspace_id", workspace.id);
+    setMembers(data || []);
+  };
+
   useEffect(() => {
     refreshDocuments();
+    refreshMembers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [workspace?.id]);
 
   const docCount = documents.length;
   const hasDocs = docCount > 0;
-  const hasEnoughInvites = invitesSentCount >= 3;
-
-  // Invite banner reappears each session — dismissed flag is local-state only.
+  const memberCount = members.length || 1;
+  const hasEnoughInvites = invitesSentCount >= 3 || memberCount >= 3;
   const showInviteBanner = !hasEnoughInvites && !inviteBannerDismissed;
 
   const handleUploadClick = () => {
+    if (!user || !workspace) return;
     const input = document.createElement("input");
     input.type = "file";
     input.multiple = true;
@@ -77,20 +113,19 @@ const Workspace = () => {
       const target = e.target as HTMLInputElement;
       if (!target.files?.length) return;
       const client = getBackendClient();
-      if (!client) {
-        toast({ title: "Backend unavailable", variant: "destructive" });
-        return;
-      }
-      const { data: { user } } = await client.auth.getUser();
-      if (!user) return;
+      if (!client) { toast({ title: "Backend unavailable", variant: "destructive" }); return; }
+
       let uploaded = 0;
       for (const file of Array.from(target.files)) {
         try {
-          const filePath = `${user.id}/${Date.now()}-${file.name}`;
+          // Path convention: <workspace_id>/<user_id>/<filename>
+          // Storage RLS reads workspace_id from the first folder segment.
+          const filePath = `${workspace.id}/${user.id}/${Date.now()}-${file.name}`;
           const { error: upErr } = await client.storage.from("documents").upload(filePath, file);
           if (upErr) throw upErr;
           await client.from("documents").insert({
             user_id: user.id,
+            workspace_id: workspace.id,
             file_name: file.name,
             file_path: filePath,
             file_size: file.size,
@@ -114,12 +149,17 @@ const Workspace = () => {
   };
 
   const goToInvites = () => {
-    // Push the user back into the invite step. We bump the step counter so
-    // GetStarted re-renders InviteColleagues, but flag the "from-workspace"
-    // origin so it returns here when complete.
     sessionStorage.setItem("invite_return_to", "/app");
     navigate("/get-started");
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  const initial = user?.email?.[0]?.toUpperCase() || "A";
+  const workspaceInitial = workspace?.name?.[0]?.toUpperCase() || "A";
 
   return (
     <motion.div
@@ -128,7 +168,6 @@ const Workspace = () => {
       className="min-h-screen h-screen flex flex-col bg-background"
     >
       {/* ============ ACTIVATION BANNER STACK ============ */}
-      {/* Upload banner — non-dismissable until at least one document exists. */}
       {!hasDocs && !loadingDocs && (
         <div className="h-11 flex items-center justify-between px-6 bg-amber-soft border-b border-amber-border shrink-0">
           <div className="flex items-center gap-2 text-[13px] text-amber-soft-foreground">
@@ -148,7 +187,6 @@ const Workspace = () => {
         </div>
       )}
 
-      {/* Invite banner — dismissable per session, reappears next visit until 3 invites sent. */}
       {showInviteBanner && (
         <div className="h-10 flex items-center justify-between px-6 bg-accent-soft border-b border-border shrink-0">
           <button
@@ -175,6 +213,14 @@ const Workspace = () => {
       >
         <div className="flex items-center gap-8">
           <AtlasLogo />
+          {workspace && (
+            <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md bg-muted">
+              <span className="w-5 h-5 rounded bg-foreground text-[10px] font-semibold text-background flex items-center justify-center">
+                {workspaceInitial}
+              </span>
+              <span className="text-[12.5px] font-medium text-foreground">{workspace.name}</span>
+            </div>
+          )}
           <nav className="hidden md:flex items-center gap-1 ml-2">
             <a className="nav-pill text-[13px] text-foreground" data-active="true">Chat</a>
             <a className="nav-pill text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Knowledge</a>
@@ -195,17 +241,53 @@ const Workspace = () => {
             </button>
           ))}
           <div className="w-px h-5 bg-border mx-1" />
-          <div className="w-8 h-8 rounded-md flex items-center justify-center text-[12px] font-semibold text-accent-foreground bg-foreground">
-            {companyName?.[0]?.toUpperCase() || "A"}
+
+          {/* User menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-1.5 p-1 rounded-md hover:bg-muted transition-colors"
+              aria-label="Account menu"
+            >
+              <div className="w-7 h-7 rounded-md flex items-center justify-center text-[12px] font-semibold text-background bg-foreground">
+                {initial}
+              </div>
+              <ChevronDown className="w-3 h-3 text-text-tertiary" />
+            </button>
+
+            {menuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.12 }}
+                className="absolute right-0 top-full mt-1 w-[240px] rounded-lg border border-border bg-card shadow-md py-1 z-50"
+              >
+                <div className="px-3 py-2 border-b border-border">
+                  <div className="text-[12.5px] font-medium text-foreground truncate">
+                    {user?.email}
+                  </div>
+                  {workspace && (
+                    <div className="text-[11px] text-text-tertiary mt-0.5">
+                      {workspace.role} · {workspace.name}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-text-secondary hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign out
+                </button>
+              </motion.div>
+            )}
           </div>
         </div>
       </header>
 
       {/* ============ BODY: SIDEBAR + CHAT ============ */}
       <div className="flex-1 flex overflow-hidden bg-background">
-        {/* Sidebar — persistent activation affordances */}
         <aside className="hidden lg:flex w-[260px] shrink-0 flex-col border-r border-border bg-sidebar">
-          {/* Upload — amber when zero docs, ghost when docs exist */}
           <div className="p-4">
             <button
               onClick={handleUploadClick}
@@ -220,7 +302,6 @@ const Workspace = () => {
             </button>
           </div>
 
-          {/* Document list */}
           <div className="px-4 pb-4">
             <div className="text-[11px] font-mono tracking-[0.14em] text-text-tertiary mb-2">
               KNOWLEDGE · {docCount}
@@ -246,22 +327,29 @@ const Workspace = () => {
             </div>
           </div>
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Team footer — always visible */}
           <div className="p-4 border-t border-border">
             <div className="text-[11px] font-mono tracking-[0.14em] text-text-tertiary mb-2">
-              TEAM · {Math.max(invitesSentCount + 1, 1)}
+              TEAM · {memberCount}
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-full bg-foreground text-[10px] font-semibold text-background flex items-center justify-center">
-                {companyName?.[0]?.toUpperCase() || "A"}
-              </div>
-              {/* Ghost avatars for empty slots */}
-              {Array.from({ length: Math.min(2, Math.max(0, 3 - invitesSentCount)) }).map((_, i) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Real members — show first 4 */}
+              {members.slice(0, 4).map((m) => (
+                <div
+                  key={m.user_id}
+                  title={m.role}
+                  className={`w-7 h-7 rounded-full text-[10px] font-semibold flex items-center justify-center ${
+                    m.user_id === user?.id ? "bg-foreground text-background" : "bg-muted text-text-secondary border border-border"
+                  }`}
+                >
+                  {m.user_id === user?.id ? initial : "·"}
+                </div>
+              ))}
+              {/* Ghost slots when team is small */}
+              {Array.from({ length: Math.max(0, 3 - memberCount) }).map((_, i) => (
                 <button
-                  key={i}
+                  key={`ghost-${i}`}
                   onClick={goToInvites}
                   className="w-7 h-7 rounded-full border border-dashed border-border bg-transparent text-text-tertiary hover:border-amber hover:text-amber transition-colors flex items-center justify-center"
                   aria-label="Invite colleague"
@@ -269,7 +357,7 @@ const Workspace = () => {
                   <Plus className="w-3 h-3" />
                 </button>
               ))}
-              {invitesSentCount === 0 && (
+              {memberCount === 1 && (
                 <button
                   onClick={goToInvites}
                   className="ml-1 text-[12px] text-amber hover:underline"
@@ -281,7 +369,6 @@ const Workspace = () => {
           </div>
         </aside>
 
-        {/* Chat surface */}
         <div className="flex-1 overflow-hidden bg-background">
           <AtlasChat />
         </div>

@@ -59,7 +59,13 @@ const Landing = () => {
               Contact sales
             </button>
             <Link
-              to="/get-started"
+              to="/sign-in"
+              className="hidden sm:inline-flex h-9 px-3 items-center text-[13px] text-text-secondary hover:text-foreground transition-colors"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/sign-up"
               className="btn-amber h-9 px-4 inline-flex items-center gap-1.5 text-[13px]"
             >
               Start free trial

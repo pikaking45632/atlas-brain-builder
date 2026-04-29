@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Copy, Check, Loader2 } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import { useOnboarding } from "@/store/onboarding";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { getBackendClient } from "@/lib/backend";
+import { ensureWorkspace } from "@/lib/workspace";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -12,8 +14,10 @@ const isValidEmail = (e: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()) && e.trim().length < 255;
 
 const InviteColleagues = () => {
-  const { companyName, setStep, setInvitesSent, invitesSentCount } = useOnboarding();
+  const { setStep, setInvitesSent, invitesSentCount, ...onboarding } = useOnboarding();
+  const { user, workspace, refreshWorkspace } = useAuth();
   const { toast } = useToast();
+
   const [inviteLink, setInviteLink] = useState("");
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -24,28 +28,69 @@ const InviteColleagues = () => {
     { email: "", role: "Member" },
   ]);
 
+  const companyName = workspace?.name || onboarding.companyName || "your team";
+  const emailDomainHint = workspace?.email_domain
+    || (onboarding.companyName ? `${onboarding.companyName.toLowerCase().replace(/\s+/g, "")}.com` : "company.com");
+
+  // Generate or fetch the invite link for this workspace.
   useEffect(() => {
     const generateInvite = async () => {
       const client = getBackendClient();
       try {
         if (!client) { setInviteLink("Backend unavailable in this preview"); return; }
-        const { data: { user } } = await client.auth.getUser();
-        if (!user?.email) return;
-        const emailDomain = user.email.split("@")[1];
-        const { data: existing } = await client.from("invitations").select("invite_code").eq("invited_by", user.id).limit(1).maybeSingle();
+        if (!user) { setInviteLink("Sign in to generate an invite link"); return; }
+
+        // Ensure a workspace exists before we try to scope an invitation to it.
+        const ws = workspace || await ensureWorkspace(client, {
+          name: onboarding.companyName || "My Workspace",
+          industry: onboarding.industry,
+          team_size: onboarding.teamSize,
+          country: onboarding.country,
+          business_type: onboarding.businessType || undefined,
+          selected_modules: onboarding.selectedModules,
+          plan: onboarding.plan || "trial",
+        });
+        if (!ws) return;
+        if (!workspace) await refreshWorkspace();
+
+        const emailDomain = (user.email || "").split("@")[1] || "team.atlas";
+
+        // Find or create the workspace's master invitation row.
+        const { data: existing } = await client
+          .from("invitations")
+          .select("invite_code")
+          .eq("workspace_id", ws.id)
+          .limit(1)
+          .maybeSingle();
+
         if (existing) {
           setInviteLink(`${window.location.origin}/join/${existing.invite_code}`);
         } else {
-          const { data: newInvite, error } = await client.from("invitations").insert({ invited_by: user.id, email_domain: emailDomain, company_name: companyName || "My Company" }).select("invite_code").single();
+          const { data: newInvite, error } = await client
+            .from("invitations")
+            .insert({
+              workspace_id: ws.id,
+              invited_by: user.id,
+              email_domain: emailDomain,
+              company_name: onboarding.companyName || "My Company",
+            })
+            .select("invite_code")
+            .single();
           if (error) throw error;
           setInviteLink(`${window.location.origin}/join/${newInvite.invite_code}`);
         }
-      } catch (err) { console.error("Error generating invite:", err); } finally { setLoading(false); }
+      } catch (err) {
+        console.error("Error generating invite:", err);
+      } finally {
+        setLoading(false);
+      }
     };
     generateInvite();
-  }, [companyName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, workspace?.id]);
 
   const copyLink = async () => {
+    if (!inviteLink || inviteLink.includes("unavailable") || inviteLink.includes("Sign in")) return;
     await navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     toast({ title: "Link copied", description: "Share with your colleagues." });
@@ -70,7 +115,6 @@ const InviteColleagues = () => {
         return;
       }
 
-      // If they typed valid emails, send invites via the Edge Function.
       if (filledCount > 0) {
         const { data, error } = await client.functions.invoke("send-invites", {
           body: {
@@ -91,10 +135,7 @@ const InviteColleagues = () => {
         setInvitesSent(invitesSentCount + sent);
 
         if (failed > 0) {
-          toast({
-            title: `${sent} sent, ${failed} failed`,
-            description: "Check console for details.",
-          });
+          toast({ title: `${sent} sent, ${failed} failed`, description: "Check console for details." });
         } else {
           toast({
             title: `${sent} invite${sent > 1 ? "s" : ""} sent`,
@@ -103,14 +144,12 @@ const InviteColleagues = () => {
         }
       }
 
-      // If user came here from the workspace banner, return them.
       if (returnTo) {
         sessionStorage.removeItem("invite_return_to");
         window.location.href = returnTo;
         return;
       }
 
-      // Otherwise, advance the onboarding flow.
       setStep(10);
     } catch (err: any) {
       toast({
@@ -174,7 +213,7 @@ const InviteColleagues = () => {
                   type="email"
                   value={row.email}
                   onChange={(e) => updateRow(idx, { email: e.target.value })}
-                  placeholder={idx === 0 ? `colleague@${companyName?.toLowerCase().replace(/\s+/g, "") || "company"}.com` : "Email address"}
+                  placeholder={idx === 0 ? `colleague@${emailDomainHint}` : "Email address"}
                   className="cinematic-input flex-1 h-[44px] text-[14px]"
                 />
                 <select
@@ -223,8 +262,8 @@ const InviteColleagues = () => {
             </div>
             <p className="mt-2 text-[12px] text-text-tertiary">
               Only people with a matching{" "}
-              <span className="font-mono text-text-secondary">@{companyName?.toLowerCase().replace(/\s+/g, "") || "company"}.com</span>{" "}
-              email can join.
+              <span className="font-mono text-text-secondary">@{emailDomainHint}</span>{" "}
+              email can join {companyName}.
             </p>
           </div>
 
