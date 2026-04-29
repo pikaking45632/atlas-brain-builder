@@ -4,7 +4,9 @@ import { FileText, X, ArrowRight, FileUp } from "lucide-react";
 import AtlasLogo from "./AtlasLogo";
 import DrawCheck from "./DrawCheck";
 import { useOnboarding } from "@/store/onboarding";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getBackendClient } from "@/lib/backend";
+import { ensureWorkspace } from "@/lib/workspace";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -16,25 +18,42 @@ interface UploadedFile {
 }
 
 const UploadDocuments = () => {
-  const { setStep, markUploaded } = useOnboarding();
+  const { setStep, markUploaded, ...onboarding } = useOnboarding();
+  const { user, workspace, refreshWorkspace } = useAuth();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [dragActive, setDragActive] = useState(false);
 
   const handleUpload = useCallback(async (fileList: FileList) => {
     const client = getBackendClient();
+    if (!client || !user) return;
+
+    // Ensure a workspace exists. If we're here without one, lazily create it
+    // using the data from the onboarding store. After this, every subsequent
+    // step in the flow has a real workspace to write to.
+    const ws = workspace || await ensureWorkspace(client, {
+      name: onboarding.companyName || "My Workspace",
+      industry: onboarding.industry,
+      team_size: onboarding.teamSize,
+      country: onboarding.country,
+      business_type: onboarding.businessType || undefined,
+      selected_modules: onboarding.selectedModules,
+      plan: onboarding.plan || "trial",
+    });
+    if (!ws) return;
+    if (!workspace) await refreshWorkspace();
+
     const newFiles = Array.from(fileList);
     for (const file of newFiles) {
       const entry: UploadedFile = { name: file.name, size: file.size, status: "uploading" };
       setFiles((prev) => [...prev, entry]);
       try {
-        if (!client) throw new Error("Backend unavailable");
-        const userId = (await client.auth.getUser()).data.user?.id;
-        if (!userId) throw new Error("Not authenticated");
-        const filePath = `${userId}/${Date.now()}-${file.name}`;
+        // Path: <workspace_id>/<user_id>/<filename> — required by storage RLS.
+        const filePath = `${ws.id}/${user.id}/${Date.now()}-${file.name}`;
         const { error: uploadError } = await client.storage.from("documents").upload(filePath, file);
         if (uploadError) throw uploadError;
         await client.from("documents").insert({
-          user_id: userId,
+          user_id: user.id,
+          workspace_id: ws.id,
           file_name: file.name,
           file_path: filePath,
           file_size: file.size,
@@ -43,16 +62,15 @@ const UploadDocuments = () => {
         setFiles((prev) =>
           prev.map((f) => (f.name === file.name && f.status === "uploading" ? { ...f, status: "done", path: filePath } : f)),
         );
-        // Flag the workspace as having content. Used to switch off the
-        // amber upload banner in the dashboard.
         markUploaded();
-      } catch {
+      } catch (err) {
+        console.error("Upload failed:", err);
         setFiles((prev) =>
           prev.map((f) => (f.name === file.name && f.status === "uploading" ? { ...f, status: "error" } : f)),
         );
       }
     }
-  }, [markUploaded]);
+  }, [user, workspace, refreshWorkspace, onboarding, markUploaded]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -80,7 +98,6 @@ const UploadDocuments = () => {
     input.click();
   };
 
-  // Onboarding step 8 → 9 (invite). Skip is allowed but de-emphasised.
   const advance = () => setStep(9);
 
   const successCount = files.filter((f) => f.status === "done").length;
@@ -171,15 +188,9 @@ const UploadDocuments = () => {
                       <p className="text-[14px] font-medium text-foreground truncate">{file.name}</p>
                       <div className="mt-0.5 flex items-center gap-2">
                         <span className="font-mono text-[11px] text-text-tertiary">{formatSize(file.size)}</span>
-                        {file.status === "uploading" && (
-                          <span className="font-mono text-[11px] text-text-secondary">· Indexing…</span>
-                        )}
-                        {file.status === "done" && (
-                          <span className="font-mono text-[11px] text-[hsl(var(--success))]">· Ready</span>
-                        )}
-                        {file.status === "error" && (
-                          <span className="font-mono text-[11px] text-destructive">· Failed</span>
-                        )}
+                        {file.status === "uploading" && <span className="font-mono text-[11px] text-text-secondary">· Indexing…</span>}
+                        {file.status === "done" && <span className="font-mono text-[11px] text-[hsl(var(--success))]">· Ready</span>}
+                        {file.status === "error" && <span className="font-mono text-[11px] text-destructive">· Failed</span>}
                       </div>
                       {file.status === "uploading" && (
                         <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">

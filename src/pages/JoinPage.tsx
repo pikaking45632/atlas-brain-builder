@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { getBackendClient } from "@/lib/backend";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const JoinPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { refreshWorkspace } = useAuth();
 
   const [invite, setInvite] = useState<{ company_name: string; email_domain: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,26 +28,11 @@ const JoinPage = () => {
   useEffect(() => {
     const fetchInvite = async () => {
       const client = getBackendClient();
+      if (!code) { setError("Invalid invite link."); setLoading(false); return; }
+      if (!client) { setError("Backend is unavailable in this preview."); setLoading(false); return; }
 
-      if (!code) {
-        setError("Invalid invite link.");
-        setLoading(false);
-        return;
-      }
-
-      if (!client) {
-        setError("Backend is unavailable in this preview.");
-        setLoading(false);
-        return;
-      }
-
-      // Use the secure Edge Function instead of querying invitations directly.
-      // The public RLS policy that allowed direct querying has been removed.
       try {
-        const { data, error: fnError } = await client.functions.invoke("invitation-lookup", {
-          body: { code },
-        });
-
+        const { data, error: fnError } = await client.functions.invoke("invitation-lookup", { body: { code } });
         if (fnError) throw new Error(fnError.message || "Lookup failed");
         if (data && (data as any).error) {
           setError((data as any).error);
@@ -71,39 +58,52 @@ const JoinPage = () => {
 
   const handleSignUp = async () => {
     const client = getBackendClient();
-
-    if (!client || !emailDomainMatches || password.length < 6 || !jobTitle.trim()) return;
+    if (!client || !emailDomainMatches || password.length < 6 || !jobTitle.trim() || !code) return;
     setSubmitting(true);
 
     try {
+      // 1. Create the auth user
       const { data: authData, error: signUpError } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: window.location.origin },
+        options: { emailRedirectTo: `${window.location.origin}/app` },
       });
-
       if (signUpError) throw signUpError;
+      if (!authData.user) throw new Error("Sign-up did not return a user");
 
-      if (authData.user) {
-        await client.from("profiles").insert({
-          user_id: authData.user.id,
-          company_name: invite!.company_name,
-          job_title: jobTitle,
-          key_activities: keyActivities,
-          email_domain: invite!.email_domain,
-          invite_code: code,
+      // 2. Wait for the session to be live (signUp returns a session
+      // immediately when email confirmation is OFF in Supabase settings).
+      // If confirmation is ON, the user has to verify before continuing.
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Account created",
+          description: "Check your email to verify, then come back to this link.",
         });
-
-        // Atomic, server-side uses increment.
-        if (code) {
-          await client.rpc("increment_invitation_uses", { p_invite_code: code });
-        }
+        return;
       }
 
-      toast({
-        title: "Account created",
-        description: "Please check your email to verify your account.",
+      // 3. Call the secure accept-invitation Edge Function which adds the
+      // user to the workspace and increments uses atomically.
+      const { data: acceptData, error: acceptError } = await client.functions.invoke("accept-invitation", {
+        body: {
+          code,
+          job_title: jobTitle,
+          key_activities: keyActivities,
+        },
       });
+      if (acceptError) throw new Error(acceptError.message);
+      if (acceptData && (acceptData as any).error) throw new Error((acceptData as any).error);
+
+      // 4. Refresh the auth context so the workspace is loaded.
+      await refreshWorkspace();
+
+      toast({
+        title: `Welcome to ${invite?.company_name}`,
+        description: "Taking you to your workspace…",
+      });
+
+      navigate("/app", { replace: true });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
@@ -207,8 +207,17 @@ const JoinPage = () => {
               disabled={!emailDomainMatches || password.length < 6 || !jobTitle.trim() || submitting}
               onClick={handleSignUp}
             >
-              {submitting ? "Creating account…" : "Create account"}
-              {!submitting && <ArrowRight className="w-4 h-4" />}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Creating account…
+                </>
+              ) : (
+                <>
+                  Join {invite?.company_name}
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>

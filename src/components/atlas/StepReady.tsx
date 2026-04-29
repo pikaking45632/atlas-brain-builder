@@ -1,16 +1,94 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { getBackendClient } from "@/lib/backend";
+import { useToast } from "@/hooks/use-toast";
 import { modules } from "@/data/modules";
 import AtlasLogo from "./AtlasLogo";
 import DrawCheck from "./DrawCheck";
 import MagneticButton from "./MagneticButton";
+import { useNavigate } from "react-router-dom";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
 const StepReady = () => {
-  const { companyName, businessType, selectedModules, hasUploadedDocuments, invitesSentCount, setStep } = useOnboarding();
+  const {
+    companyName,
+    industry,
+    teamSize,
+    country,
+    plan,
+    businessType,
+    selectedModules,
+    hasUploadedDocuments,
+    invitesSentCount,
+    reset,
+  } = useOnboarding();
+  const { user, workspace, refreshWorkspace } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [creating, setCreating] = useState(false);
+
   const selectedList = modules.filter((m) => selectedModules.includes(m.id));
+
+  const handleOpen = async () => {
+    if (creating) return;
+
+    // If they already have a workspace (e.g. they came back through
+    // onboarding by accident), just go straight in.
+    if (workspace) {
+      reset();
+      navigate("/app");
+      return;
+    }
+
+    if (!user) {
+      navigate("/sign-up");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const client = getBackendClient();
+      if (!client) throw new Error("Backend unavailable");
+
+      const { data, error } = await client.functions.invoke("create-workspace", {
+        body: {
+          name: companyName?.trim() || "My Workspace",
+          industry,
+          team_size: teamSize,
+          country,
+          business_type: businessType || undefined,
+          selected_modules: selectedModules,
+          plan: plan || "trial",
+        },
+      });
+
+      if (error) throw new Error(error.message || "Could not create workspace");
+      if (data && (data as any).error) throw new Error((data as any).error);
+
+      // Refresh the auth provider so it picks up the new workspace.
+      await refreshWorkspace();
+
+      toast({
+        title: "Workspace ready",
+        description: `${companyName || "Your"} Atlas is live.`,
+      });
+
+      reset();
+      navigate("/app");
+    } catch (err: any) {
+      toast({
+        title: "Couldn't open workspace",
+        description: err?.message || "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <motion.div
@@ -54,11 +132,21 @@ const StepReady = () => {
 
           <div className="mt-10 flex items-center gap-3">
             <MagneticButton
-              onClick={() => setStep(12)}
-              className="btn-amber h-[52px] px-7 flex items-center gap-2 group"
+              onClick={handleOpen}
+              disabled={creating}
+              className="btn-amber h-[52px] px-7 flex items-center gap-2 group disabled:opacity-60"
             >
-              Open Atlas
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              {creating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Opening Atlas…
+                </>
+              ) : (
+                <>
+                  Open Atlas
+                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </>
+              )}
             </MagneticButton>
             <span className="hidden sm:inline font-mono text-[11px] tracking-[0.14em] text-text-tertiary">
               ⌘ + ⏎
