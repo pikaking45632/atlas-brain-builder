@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, Loader2, Check } from "lucide-react";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { lovable } from "@/integrations/lovable";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -16,10 +17,27 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [appleLoading, setAppleLoading] = useState(false);
 
   useEffect(() => {
     setTimeout(() => emailRef.current?.focus(), 50);
   }, []);
+
+  const handleApple = async () => {
+    if (appleLoading) return;
+    setAppleLoading(true);
+    setError("");
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin + "/get-started",
+    });
+    if (result.error) {
+      setAppleLoading(false);
+      setError(typeof result.error === "string" ? result.error : "Could not sign up with Apple.");
+      return;
+    }
+    if (result.redirected) return;
+    navigate("/get-started", { replace: true });
+  };
 
   const passwordChecks = {
     length: password.length >= 8,
@@ -151,6 +169,31 @@ const SignUp = () => {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </>
               )}
+            </button>
+
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="bg-card px-2 text-[11px] uppercase tracking-wider text-text-tertiary">or</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleApple}
+              disabled={appleLoading}
+              className="w-full h-[44px] inline-flex items-center justify-center gap-2 rounded-md bg-foreground text-background hover:opacity-90 transition-opacity text-[14px] font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {appleLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" aria-hidden="true">
+                  <path d="M16.365 1.43c0 1.14-.45 2.23-1.18 3.04-.78.86-2.05 1.52-3.1 1.43-.13-1.1.43-2.27 1.13-3.02.79-.86 2.13-1.49 3.15-1.45zM20.5 17.27c-.6 1.39-.88 2.01-1.65 3.24-1.07 1.7-2.58 3.82-4.45 3.84-1.66.02-2.09-1.08-4.34-1.07-2.25.01-2.72 1.09-4.39 1.07-1.87-.02-3.3-1.94-4.37-3.64C-1 16.85-.95 11.96 1.45 9.34c1.32-1.45 3.4-2.36 5.36-2.36 2 0 3.25 1.1 4.91 1.1 1.6 0 2.58-1.1 4.89-1.1 1.74 0 3.59.95 4.9 2.59-4.31 2.36-3.6 8.5-1.01 7.7z"/>
+                </svg>
+              )}
+              Continue with Apple
             </button>
           </form>
 
