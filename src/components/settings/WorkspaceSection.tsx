@@ -29,7 +29,7 @@ export function WorkspaceSection() {
       const [wsRes, memberRes] = await Promise.all([
         supabase
           .from("workspaces")
-          .select("name, logo_url")
+          .select("name, logo_url" as any)
           .eq("id", workspace.id)
           .maybeSingle(),
         supabase
@@ -42,8 +42,9 @@ export function WorkspaceSection() {
       if (cancelled) return;
       if (wsRes.error) setError(wsRes.error.message);
       else if (wsRes.data) {
-        setName(wsRes.data.name ?? "");
-        setLogoUrl(wsRes.data.logo_url ?? "");
+        const ws = wsRes.data as any;
+        setName(ws.name ?? "");
+        setLogoUrl(ws.logo_url ?? "");
       }
       if (memberRes.data) setRole(memberRes.data.role);
       setLoading(false);
@@ -62,7 +63,7 @@ export function WorkspaceSection() {
       .update({
         name: name.trim() || workspace.name,
         logo_url: logoUrl.trim() || null,
-      })
+      } as any)
       .eq("id", workspace.id);
     setSaving(false);
     if (updateErr) {

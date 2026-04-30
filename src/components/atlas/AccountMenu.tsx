@@ -24,11 +24,11 @@ export function AccountMenu() {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", user.id)
+        .select("display_name, full_name, avatar_url")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled || !data) return;
-      setDisplayName(data.display_name ?? null);
+      setDisplayName(data.display_name ?? data.full_name ?? null);
       setAvatarUrl(data.avatar_url ?? null);
     })();
     return () => {

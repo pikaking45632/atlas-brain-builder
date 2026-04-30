@@ -34,8 +34,7 @@ interface CommandPaletteProps {
 
 interface DocResult {
   id: string;
-  title: string | null;
-  filename: string | null;
+  file_name: string | null;
 }
 
 export function CommandPalette({
@@ -58,11 +57,11 @@ export function CommandPalette({
     (async () => {
       const { data } = await supabase
         .from("documents")
-        .select("id, title, filename")
+        .select("id, file_name")
         .eq("workspace_id", workspace.id)
         .order("created_at", { ascending: false })
         .limit(20);
-      if (!cancelled) setDocs((data as DocResult[]) ?? []);
+      if (!cancelled) setDocs(((data as unknown) as DocResult[]) ?? []);
     })();
     return () => {
       cancelled = true;
@@ -149,12 +148,12 @@ export function CommandPalette({
               {docs.map((doc) => (
                 <CommandItem
                   key={doc.id}
-                  value={`doc-${doc.title || doc.filename || doc.id}`}
+                  value={`doc-${doc.file_name || doc.id}`}
                   onSelect={() => run(() => onSelectTab("knowledge"))}
                 >
                   <FileText className="mr-2 h-4 w-4 text-slate-400" />
                   <span className="truncate">
-                    {doc.title || doc.filename || "Untitled"}
+                    {doc.file_name || "Untitled"}
                   </span>
                 </CommandItem>
               ))}

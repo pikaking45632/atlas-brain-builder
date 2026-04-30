@@ -23,14 +23,14 @@ export function ProfileSection() {
       setLoading(true);
       const { data, error: fetchErr } = await supabase
         .from("profiles")
-        .select("display_name, avatar_url")
-        .eq("id", user.id)
+        .select("display_name, full_name, avatar_url")
+        .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
       if (fetchErr) {
         setError(fetchErr.message);
       } else if (data) {
-        setDisplayName(data.display_name ?? "");
+        setDisplayName(data.display_name ?? data.full_name ?? "");
         setAvatarUrl(data.avatar_url ?? "");
       }
       setLoading(false);
@@ -46,11 +46,14 @@ export function ProfileSection() {
     setError(null);
     const { error: upsertErr } = await supabase
       .from("profiles")
-      .upsert({
-        id: user.id,
-        display_name: displayName.trim() || null,
-        avatar_url: avatarUrl.trim() || null,
-      });
+      .upsert(
+        {
+          user_id: user.id,
+          display_name: displayName.trim() || null,
+          avatar_url: avatarUrl.trim() || null,
+        },
+        { onConflict: "user_id" },
+      );
     setSaving(false);
     if (upsertErr) {
       setError(upsertErr.message);

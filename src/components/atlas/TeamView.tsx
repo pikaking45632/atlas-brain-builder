@@ -15,7 +15,7 @@ import {
 interface MemberRow {
   user_id: string;
   role: string;
-  created_at: string;
+  joined_at: string;
   profile: {
     display_name: string | null;
     avatar_url: string | null;
@@ -25,10 +25,11 @@ interface MemberRow {
 
 interface InvitationRow {
   id: string;
-  email: string;
-  role: string;
+  email: string | null;
+  company_name: string;
   created_at: string;
-  accepted_at: string | null;
+  uses: number;
+  max_uses: number | null;
 }
 
 interface TeamViewProps {
@@ -56,9 +57,9 @@ export function TeamView({ onInviteClick }: TeamViewProps) {
     // profiles is keyed by user id and may or may not have a row for everyone.
     const { data: memberRows, error: memErr } = await supabase
       .from("workspace_members")
-      .select("user_id, role, created_at")
+      .select("user_id, role, joined_at")
       .eq("workspace_id", workspace.id)
-      .order("created_at", { ascending: true });
+      .order("joined_at", { ascending: true });
 
     if (memErr) {
       setError(memErr.message);
@@ -70,12 +71,12 @@ export function TeamView({ onInviteClick }: TeamViewProps) {
     const { data: profileRows } = userIds.length
       ? await supabase
           .from("profiles")
-          .select("id, display_name, avatar_url, email")
-          .in("id", userIds)
+          .select("user_id, display_name, full_name, avatar_url, email")
+          .in("user_id", userIds)
       : { data: [] as any[] };
 
     const profileMap = new Map(
-      (profileRows ?? []).map((p: any) => [p.id, p]),
+      (profileRows ?? []).map((p: any) => [p.user_id, p]),
     );
 
     const enriched: MemberRow[] = (memberRows ?? []).map((m) => {
@@ -83,10 +84,10 @@ export function TeamView({ onInviteClick }: TeamViewProps) {
       return {
         user_id: m.user_id,
         role: m.role,
-        created_at: m.created_at,
+        joined_at: m.joined_at,
         profile: profile
           ? {
-              display_name: profile.display_name ?? null,
+              display_name: profile.display_name ?? profile.full_name ?? null,
               avatar_url: profile.avatar_url ?? null,
             }
           : null,
@@ -97,15 +98,24 @@ export function TeamView({ onInviteClick }: TeamViewProps) {
     setMembers(enriched);
     setMyRole(enriched.find((m) => m.user_id === user.id)?.role ?? null);
 
-    // Pending invitations
+    // Pending invitations (workspace-scoped invite codes that still have uses left)
     const { data: invRows } = await supabase
       .from("invitations")
-      .select("id, email, role, created_at, accepted_at")
+      .select("id, company_name, created_at, uses, max_uses")
       .eq("workspace_id", workspace.id)
-      .is("accepted_at", null)
       .order("created_at", { ascending: false });
 
-    setInvitations((invRows as InvitationRow[]) ?? []);
+    const pending: InvitationRow[] = ((invRows as any[]) ?? [])
+      .filter((r) => (r.uses ?? 0) < (r.max_uses ?? 50))
+      .map((r) => ({
+        id: r.id,
+        email: null,
+        company_name: r.company_name,
+        created_at: r.created_at,
+        uses: r.uses ?? 0,
+        max_uses: r.max_uses ?? null,
+      }));
+    setInvitations(pending);
     setLoading(false);
   }
 
@@ -271,17 +281,17 @@ export function TeamView({ onInviteClick }: TeamViewProps) {
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="truncate text-sm font-medium text-slate-900">
-                        {inv.email}
+                        {inv.email ?? `Invite link · ${inv.company_name}`}
                       </span>
                       <p className="text-xs text-slate-500">
-                        Invited{" "}
+                        {`${inv.uses}/${inv.max_uses ?? 50} used · created `}
                         {new Date(inv.created_at).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",
                         })}
                       </p>
                     </div>
-                    <RolePill role={inv.role} />
+                    <RolePill role="member" />
                     {isAdmin && (
                       <button
                         onClick={() => revokeInvitation(inv.id)}

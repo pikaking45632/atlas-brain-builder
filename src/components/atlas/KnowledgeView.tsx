@@ -16,10 +16,9 @@ import {
 
 interface DocRow {
   id: string;
-  title: string | null;
-  filename: string | null;
-  storage_path: string | null;
-  status: string | null;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
   created_at: string;
   user_id: string;
 }
@@ -41,11 +40,11 @@ export function KnowledgeView({ onUploadClick }: KnowledgeViewProps) {
     setLoading(true);
     const { data, error: fetchErr } = await supabase
       .from("documents")
-      .select("id, title, filename, storage_path, status, created_at, user_id")
+      .select("id, file_name, file_path, file_size, created_at, user_id")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: false });
     if (fetchErr) setError(fetchErr.message);
-    else setDocs((data as DocRow[]) ?? []);
+    else setDocs(((data as unknown) as DocRow[]) ?? []);
     setLoading(false);
   }
 
@@ -68,10 +67,10 @@ export function KnowledgeView({ onUploadClick }: KnowledgeViewProps) {
       setPendingDelete(null);
       return;
     }
-    if (pendingDelete.storage_path) {
+    if (pendingDelete.file_path) {
       await supabase.storage
         .from("documents")
-        .remove([pendingDelete.storage_path])
+        .remove([pendingDelete.file_path])
         .catch(() => {
           // Non-fatal; row is already gone.
         });
@@ -134,7 +133,7 @@ export function KnowledgeView({ onUploadClick }: KnowledgeViewProps) {
             <thead className="border-b border-slate-200 bg-slate-50">
               <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
                 <th className="px-4 py-2.5 font-medium">Document</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
+                <th className="px-4 py-2.5 font-medium">Size</th>
                 <th className="px-4 py-2.5 font-medium">Added</th>
                 <th className="px-4 py-2.5"></th>
               </tr>
@@ -146,12 +145,14 @@ export function KnowledgeView({ onUploadClick }: KnowledgeViewProps) {
                     <div className="flex items-center gap-2.5">
                       <FileText className="h-4 w-4 flex-shrink-0 text-slate-400" />
                       <span className="font-medium text-slate-900">
-                        {doc.title || doc.filename || "Untitled"}
+                        {doc.file_name || "Untitled"}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <StatusPill status={doc.status} />
+                  <td className="px-4 py-3 text-slate-600">
+                    {doc.file_size != null
+                      ? `${(doc.file_size / 1024).toFixed(1)} KB`
+                      : "—"}
                   </td>
                   <td className="px-4 py-3 text-slate-600">
                     {new Date(doc.created_at).toLocaleDateString(undefined, {
@@ -184,7 +185,7 @@ export function KnowledgeView({ onUploadClick }: KnowledgeViewProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this document?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{pendingDelete?.title || pendingDelete?.filename}" will be removed
+              "{pendingDelete?.file_name}" will be removed
               from Atlas's knowledge for everyone in this workspace. This can't
               be undone.
             </AlertDialogDescription>
