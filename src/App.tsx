@@ -12,6 +12,7 @@ import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import JoinPage from "./pages/JoinPage.tsx";
+import SettingsPage from "./pages/SettingsPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,13 @@ const App = () => (
             <Route path="/app" element={
               <ProtectedRoute requireWorkspace>
                 <Workspace />
+              </ProtectedRoute>
+            } />
+
+            {/* Workspace settings */}
+            <Route path="/settings" element={
+              <ProtectedRoute requireWorkspace>
+                <SettingsPage />
               </ProtectedRoute>
             } />
 

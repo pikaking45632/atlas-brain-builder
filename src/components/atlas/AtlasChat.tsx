@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, User, Loader2, ChevronDown, Upload, FileText } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
+import { useAtlasUi } from "@/store/atlasUiStore";
 import { buildSystemPrompt, getActiveAgents } from "@/data/agent-prompts";
 import ReactMarkdown from "react-markdown";
 
@@ -74,6 +75,8 @@ async function streamChat({
 
 const AtlasChat = () => {
   const { selectedModules, companyName, businessType, setStep } = useOnboarding();
+  const pendingPrompt = useAtlasUi((s) => s.pendingPrompt);
+  const clearPendingPrompt = useAtlasUi((s) => s.clearPendingPrompt);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +90,16 @@ const AtlasChat = () => {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Consume queued prompts pushed in by PromptCards / CommandPalette.
+  useEffect(() => {
+    if (pendingPrompt && !isLoading) {
+      const text = pendingPrompt;
+      clearPendingPrompt();
+      send(text);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPrompt]);
 
   const send = async (text?: string) => {
     const msg = text || input.trim();

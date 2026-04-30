@@ -1,18 +1,16 @@
-import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
   CalendarDays,
-  Settings,
+  Settings as SettingsIcon,
   Command,
   Upload,
   X,
   Plus,
   FileText,
   ArrowRight,
-  LogOut,
-  ChevronDown,
 } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -20,6 +18,15 @@ import { getBackendClient } from "@/lib/backend";
 import { useToast } from "@/hooks/use-toast";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import AtlasChat from "@/components/atlas/AtlasChat";
+import { useAtlasUi, type AtlasTab } from "@/store/atlasUiStore";
+import { useCommandPalette } from "@/hooks/useCommandPalette";
+import { AccountMenu } from "@/components/atlas/AccountMenu";
+import { WorkspaceSwitcher } from "@/components/atlas/WorkspaceSwitcher";
+import { CommandPalette } from "@/components/atlas/CommandPalette";
+import { KnowledgeView } from "@/components/atlas/KnowledgeView";
+import { TeamView } from "@/components/atlas/TeamView";
+import { SoftLaunchModal } from "@/components/atlas/SoftLaunchModal";
+import ConnectSources from "@/components/atlas/ConnectSources";
 
 interface DocRow {
   id: string;
@@ -36,17 +43,21 @@ interface MemberRow {
 const Workspace = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, workspace, signOut } = useAuth();
+  const { user, workspace } = useAuth();
   const { hasUploadedDocuments, invitesSentCount, markUploaded } = useOnboarding();
 
   const [shrunk, setShrunk] = useState(false);
   const [inviteBannerDismissed, setInviteBannerDismissed] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const [documents, setDocuments] = useState<DocRow[]>([]);
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
+
+  const activeTab = useAtlasUi((s) => s.activeTab);
+  const setActiveTab = useAtlasUi((s) => s.setActiveTab);
+  const palette = useCommandPalette();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
 
   // Sticky-nav scroll-shrink
   useEffect(() => {
@@ -54,15 +65,6 @@ const Workspace = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  // Click-outside the user menu
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    if (menuOpen) document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [menuOpen]);
 
   const refreshDocuments = async () => {
     const client = getBackendClient();
@@ -153,13 +155,12 @@ const Workspace = () => {
     navigate("/get-started");
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   const initial = user?.email?.[0]?.toUpperCase() || "A";
-  const workspaceInitial = workspace?.name?.[0]?.toUpperCase() || "A";
+
+  const tabClass = (key: AtlasTab) =>
+    activeTab === key
+      ? "nav-pill text-[13px] text-foreground"
+      : "nav-pill text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer";
 
   return (
     <motion.div
@@ -214,74 +215,43 @@ const Workspace = () => {
         <div className="flex items-center gap-8">
           <AtlasLogo />
           {workspace && (
-            <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md bg-muted">
-              <span className="w-5 h-5 rounded bg-foreground text-[10px] font-semibold text-background flex items-center justify-center">
-                {workspaceInitial}
-              </span>
-              <span className="text-[12.5px] font-medium text-foreground">{workspace.name}</span>
+            <div className="hidden md:block">
+              <WorkspaceSwitcher onInviteClick={goToInvites} />
             </div>
           )}
           <nav className="hidden md:flex items-center gap-1 ml-2">
-            <a className="nav-pill text-[13px] text-foreground" data-active="true">Chat</a>
-            <a className="nav-pill text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Knowledge</a>
-            <a className="nav-pill text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Sources</a>
-            <a className="nav-pill text-[13px] text-text-secondary hover:text-foreground transition-colors cursor-pointer">Team</a>
+            <button onClick={() => setActiveTab("chat")} className={tabClass("chat")} data-active={activeTab === "chat"}>Chat</button>
+            <button onClick={() => setActiveTab("knowledge")} className={tabClass("knowledge")} data-active={activeTab === "knowledge"}>Knowledge</button>
+            <button onClick={() => setActiveTab("sources")} className={tabClass("sources")} data-active={activeTab === "sources"}>Sources</button>
+            <button onClick={() => setActiveTab("team")} className={tabClass("team")} data-active={activeTab === "team"}>Team</button>
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="hidden md:flex items-center gap-2 h-8 px-3 rounded-md border border-border bg-background hover:bg-muted text-[12.5px] text-text-secondary transition-colors">
+          <button
+            onClick={palette.show}
+            className="hidden md:flex items-center gap-2 h-8 px-3 rounded-md border border-border bg-background hover:bg-muted text-[12.5px] text-text-secondary transition-colors"
+          >
             <Search className="w-3.5 h-3.5" />
             Search
             <kbd className="kbd ml-2"><Command className="w-2.5 h-2.5 inline -mt-0.5" />K</kbd>
           </button>
-          {[CalendarDays, Settings].map((Icon, i) => (
-            <button key={i} className="p-2 rounded-md hover:bg-muted text-text-secondary hover:text-foreground transition-colors">
-              <Icon className="w-4 h-4" />
-            </button>
-          ))}
+          <button
+            onClick={() => setCalendarOpen(true)}
+            aria-label="Calendar"
+            className="p-2 rounded-md hover:bg-muted text-text-secondary hover:text-foreground transition-colors"
+          >
+            <CalendarDays className="w-4 h-4" />
+          </button>
+          <Link
+            to="/settings"
+            aria-label="Settings"
+            className="p-2 rounded-md hover:bg-muted text-text-secondary hover:text-foreground transition-colors"
+          >
+            <SettingsIcon className="w-4 h-4" />
+          </Link>
           <div className="w-px h-5 bg-border mx-1" />
-
-          {/* User menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-1.5 p-1 rounded-md hover:bg-muted transition-colors"
-              aria-label="Account menu"
-            >
-              <div className="w-7 h-7 rounded-md flex items-center justify-center text-[12px] font-semibold text-background bg-foreground">
-                {initial}
-              </div>
-              <ChevronDown className="w-3 h-3 text-text-tertiary" />
-            </button>
-
-            {menuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.12 }}
-                className="absolute right-0 top-full mt-1 w-[240px] rounded-lg border border-border bg-card shadow-md py-1 z-50"
-              >
-                <div className="px-3 py-2 border-b border-border">
-                  <div className="text-[12.5px] font-medium text-foreground truncate">
-                    {user?.email}
-                  </div>
-                  {workspace && (
-                    <div className="text-[11px] text-text-tertiary mt-0.5">
-                      {workspace.role} · {workspace.name}
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-text-secondary hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sign out
-                </button>
-              </motion.div>
-            )}
-          </div>
+          <AccountMenu />
         </div>
       </header>
 
@@ -300,6 +270,24 @@ const Workspace = () => {
               {hasDocs ? <Plus className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
               Upload documents
             </button>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setActiveTab("chat")}
+                aria-label="New chat"
+                title="New chat"
+                className="inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-border bg-card hover:bg-muted text-[12px] text-text-secondary transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Chat
+              </button>
+              <button
+                onClick={() => setCollectionsOpen(true)}
+                aria-label="New collection"
+                title="New collection"
+                className="inline-flex items-center justify-center gap-1.5 h-8 rounded-md border border-border bg-card hover:bg-muted text-[12px] text-text-secondary transition-colors"
+              >
+                <Plus className="w-3 h-3" /> Collection
+              </button>
+            </div>
           </div>
 
           <div className="px-4 pb-4">
@@ -370,9 +358,60 @@ const Workspace = () => {
         </aside>
 
         <div className="flex-1 overflow-hidden bg-background">
-          <AtlasChat />
+          {activeTab === "chat" && <AtlasChat />}
+          {activeTab === "knowledge" && (
+            <div className="h-full overflow-y-auto p-6">
+              <div className="max-w-5xl mx-auto">
+                <KnowledgeView onUploadClick={handleUploadClick} />
+              </div>
+            </div>
+          )}
+          {activeTab === "sources" && (
+            <div className="h-full overflow-y-auto p-6">
+              <div className="max-w-5xl mx-auto">
+                <ConnectSources />
+              </div>
+            </div>
+          )}
+          {activeTab === "team" && (
+            <div className="h-full overflow-y-auto p-6">
+              <div className="max-w-5xl mx-auto">
+                <TeamView onInviteClick={goToInvites} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <CommandPalette
+        open={palette.open}
+        onOpenChange={palette.setOpen}
+        onSelectTab={setActiveTab}
+        onUpload={handleUploadClick}
+        onInvite={goToInvites}
+        onNewChat={() => setActiveTab("chat")}
+      />
+
+      <SoftLaunchModal
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        featureKey="calendar"
+        title="Calendar in Atlas"
+        description="See your day, schedule meetings, and have Atlas prep you for each one — all from inside the app."
+        shippingSignal="Launching with the Google Workspace connector. Microsoft 365 follows."
+        notePlaceholder="Which calendar do you use? What would you want Atlas to do with it?"
+        workspaceId={workspace?.id ?? null}
+      />
+
+      <SoftLaunchModal
+        open={collectionsOpen}
+        onOpenChange={setCollectionsOpen}
+        featureKey="knowledge_collections"
+        title="Knowledge collections"
+        description="Group documents by topic, team, or client so Atlas can scope its answers to just the right context."
+        shippingSignal="Coming with the next pilot release."
+        workspaceId={workspace?.id ?? null}
+      />
     </motion.div>
   );
 };
