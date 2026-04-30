@@ -24,6 +24,7 @@ export function WorkspaceSwitcher({ onInviteClick }: WorkspaceSwitcherProps) {
   }
 
   const name = workspace?.name ?? "Workspace";
+  const logoUrl = (workspace as any)?.logo_url as string | undefined;
   const initial = name.charAt(0).toUpperCase();
 
   return (
@@ -33,9 +34,9 @@ export function WorkspaceSwitcher({ onInviteClick }: WorkspaceSwitcherProps) {
           className="flex items-center gap-2 rounded-lg bg-slate-900 py-1.5 pl-1.5 pr-2.5 text-sm font-medium text-white transition hover:bg-slate-800"
           aria-label="Workspace menu"
         >
-          {workspace?.logo_url ? (
+          {logoUrl ? (
             <img
-              src={workspace.logo_url}
+              src={logoUrl}
               alt=""
               className="h-6 w-6 rounded object-cover"
             />
