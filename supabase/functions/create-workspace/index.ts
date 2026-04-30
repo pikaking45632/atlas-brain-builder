@@ -106,25 +106,41 @@ serve(async (req) => {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 40);
-    const slug = baseSlug || undefined;
 
-    // Insert the workspace.
-    const { data: ws, error: wsErr } = await admin
-      .from("workspaces")
-      .insert({
-        name,
-        slug,
-        email_domain: emailDomain,
-        industry: trim(body.industry, 80) || null,
-        team_size: trim(body.team_size, 30) || null,
-        country: trim(body.country, 80) || null,
-        business_type: trim(body.business_type, 80) || null,
-        selected_modules: Array.isArray(body.selected_modules) ? body.selected_modules : [],
-        plan: trim(body.plan, 30) || "trial",
-        created_by: user.id,
-      })
-      .select("id")
-      .single();
+    // Try the clean slug first; if it collides, retry with a random suffix.
+    // Postgres unique violation = code "23505".
+    let ws: { id: string } | null = null;
+    let wsErr: any = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const slug = attempt === 0
+        ? (baseSlug || undefined)
+        : `${baseSlug || "ws"}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const res = await admin
+        .from("workspaces")
+        .insert({
+          name,
+          slug,
+          email_domain: emailDomain,
+          industry: trim(body.industry, 80) || null,
+          team_size: trim(body.team_size, 30) || null,
+          country: trim(body.country, 80) || null,
+          business_type: trim(body.business_type, 80) || null,
+          selected_modules: Array.isArray(body.selected_modules) ? body.selected_modules : [],
+          plan: trim(body.plan, 30) || "trial",
+          created_by: user.id,
+        })
+        .select("id")
+        .single();
+
+      if (!res.error && res.data) {
+        ws = res.data;
+        wsErr = null;
+        break;
+      }
+      wsErr = res.error;
+      if (res.error?.code !== "23505") break; // non-collision error: bail
+    }
 
     if (wsErr || !ws) {
       console.error("workspace insert error:", wsErr);
