@@ -232,6 +232,44 @@ export type Database = {
           },
         ]
       }
+      feature_waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          feature_key: string
+          id: string
+          note: string | null
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          feature_key: string
+          id?: string
+          note?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          feature_key?: string
+          id?: string
+          note?: string | null
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feature_waitlist_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hired_agents: {
         Row: {
           agent_id: string
@@ -393,8 +431,11 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           company_name: string | null
           created_at: string
+          display_name: string | null
+          email: string | null
           email_domain: string | null
           full_name: string | null
           id: string
@@ -405,8 +446,11 @@ export type Database = {
           workspace_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           company_name?: string | null
           created_at?: string
+          display_name?: string | null
+          email?: string | null
           email_domain?: string | null
           full_name?: string | null
           id?: string
@@ -417,8 +461,11 @@ export type Database = {
           workspace_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           company_name?: string | null
           created_at?: string
+          display_name?: string | null
+          email?: string | null
           email_domain?: string | null
           full_name?: string | null
           id?: string
@@ -479,6 +526,7 @@ export type Database = {
           email_domain: string | null
           id: string
           industry: string | null
+          logo_url: string | null
           name: string
           plan: string | null
           selected_modules: Json | null
@@ -494,6 +542,7 @@ export type Database = {
           email_domain?: string | null
           id?: string
           industry?: string | null
+          logo_url?: string | null
           name: string
           plan?: string | null
           selected_modules?: Json | null
@@ -509,6 +558,7 @@ export type Database = {
           email_domain?: string | null
           id?: string
           industry?: string | null
+          logo_url?: string | null
           name?: string
           plan?: string | null
           selected_modules?: Json | null
