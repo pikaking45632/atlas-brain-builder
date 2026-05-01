@@ -1,229 +1,389 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { useParams, useNavigate } from "react-router-dom";
-import { Shield, ArrowRight, AlertCircle, Loader2 } from "lucide-react";
-import AtlasLogo from "@/components/atlas/AtlasLogo";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  ShieldAlert,
+  Clock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { getBackendClient } from "@/lib/backend";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 
-const JoinPage = () => {
+interface LookupResult {
+  ok: true;
+  workspace_name: string;
+  invitee_email: string;
+  role: "member" | "admin";
+  status: "pending" | "accepted" | "revoked" | "expired";
+  expires_at: string;
+  inviter_name: string;
+}
+
+type LookupError =
+  | "invitation_not_found"
+  | "invitation_already_accepted"
+  | "invitation_revoked"
+  | "invitation_expired"
+  | "invitation_email_mismatch"
+  | "lookup_failed";
+
+type Phase =
+  | "loading"
+  | "needs_signup"
+  | "needs_signin_other_email"
+  | "ready_to_accept"
+  | "accepting"
+  | "accepted"
+  | "error";
+
+export default function JoinPage() {
   const { code } = useParams<{ code: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { refreshWorkspace } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  const [invite, setInvite] = useState<{ company_name: string; email_domain: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [phase, setPhase] = useState<Phase>("loading");
+  const [lookup, setLookup] = useState<LookupResult | null>(null);
+  const [errorKey, setErrorKey] = useState<LookupError | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [keyActivities, setKeyActivities] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // Token can come from /:code OR a fallback ?token= query param.
+  const token = (code ?? searchParams.get("token") ?? "").trim();
 
+  // Step 1: look up the invitation by token (anonymous endpoint).
   useEffect(() => {
-    const fetchInvite = async () => {
-      const client = getBackendClient();
-      if (!code) { setError("Invalid invite link."); setLoading(false); return; }
-      if (!client) { setError("Backend is unavailable in this preview."); setLoading(false); return; }
+    if (!token) {
+      setErrorKey("invitation_not_found");
+      setPhase("error");
+      return;
+    }
+    let cancelled = false;
 
+    (async () => {
       try {
-        const { data, error: fnError } = await client.functions.invoke("invitation-lookup", { body: { code } });
-        if (fnError) throw new Error(fnError.message || "Lookup failed");
-        if (data && (data as any).error) {
-          setError((data as any).error);
-        } else if (data && (data as any).invitation) {
-          setInvite({
-            company_name: (data as any).invitation.company_name,
-            email_domain: (data as any).invitation.email_domain,
-          });
-        } else {
-          setError("This invite link is invalid or has expired.");
+        const { data, error } = await supabase.functions.invoke(
+          "invitation-lookup",
+          { body: { token } },
+        );
+        if (cancelled) return;
+
+        if (error || (data as any)?.error) {
+          const errKey = ((data as any)?.error ?? "lookup_failed") as LookupError;
+          setErrorKey(errKey);
+          setErrorMsg(error?.message ?? null);
+          setPhase("error");
+          return;
         }
-      } catch (err: any) {
-        setError(err?.message || "Could not look up this invitation.");
-      } finally {
-        setLoading(false);
+
+        const result = data as LookupResult;
+        setLookup(result);
+
+        if (result.status === "accepted") {
+          setErrorKey("invitation_already_accepted");
+          setPhase("error");
+          return;
+        }
+        if (result.status === "revoked") {
+          setErrorKey("invitation_revoked");
+          setPhase("error");
+          return;
+        }
+        if (
+          result.status === "expired" ||
+          new Date(result.expires_at) < new Date()
+        ) {
+          setErrorKey("invitation_expired");
+          setPhase("error");
+          return;
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setErrorKey("lookup_failed");
+        setErrorMsg(e instanceof Error ? e.message : "Unknown error");
+        setPhase("error");
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-    fetchInvite();
-  }, [code]);
+  }, [token]);
 
-  const emailDomainMatches =
-    invite && email.includes("@") && email.split("@")[1] === invite.email_domain;
+  // Step 2: once lookup resolves and auth state is known, decide what to do.
+  useEffect(() => {
+    if (!lookup || authLoading) return;
+    if (phase === "error" || phase === "accepted" || phase === "accepting")
+      return;
 
-  const handleSignUp = async () => {
-    const client = getBackendClient();
-    if (!client || !emailDomainMatches || password.length < 6 || !jobTitle.trim() || !code) return;
-    setSubmitting(true);
+    if (!user) {
+      // Not signed in — they need to sign up (or sign in if they already
+      // have an account at this email).
+      setPhase("needs_signup");
+      return;
+    }
 
+    // Signed in. Does the email match the invitation?
+    if ((user.email ?? "").toLowerCase() !== lookup.invitee_email.toLowerCase()) {
+      setPhase("needs_signin_other_email");
+      return;
+    }
+
+    setPhase("ready_to_accept");
+  }, [lookup, user, authLoading, phase]);
+
+  async function handleAccept() {
+    setPhase("accepting");
     try {
-      // 1. Create the auth user
-      const { data: authData, error: signUpError } = await client.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: `${window.location.origin}/app` },
-      });
-      if (signUpError) throw signUpError;
-      if (!authData.user) throw new Error("Sign-up did not return a user");
+      const { data, error } = await supabase.functions.invoke(
+        "accept-invitation",
+        { body: { token } },
+      );
 
-      // 2. Wait for the session to be live (signUp returns a session
-      // immediately when email confirmation is OFF in Supabase settings).
-      // If confirmation is ON, the user has to verify before continuing.
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Account created",
-          description: "Check your email to verify, then come back to this link.",
-        });
+      if (error) {
+        // Try to extract the specific error from the response body.
+        const errKey = ((data as any)?.error ?? null) as LookupError | null;
+        if (errKey) {
+          setErrorKey(errKey);
+        } else {
+          setErrorMsg(error.message);
+        }
+        setPhase("error");
+        return;
+      }
+      if ((data as any)?.error) {
+        setErrorKey((data as any).error as LookupError);
+        setPhase("error");
         return;
       }
 
-      // 3. Call the secure accept-invitation Edge Function which adds the
-      // user to the workspace and increments uses atomically.
-      const { data: acceptData, error: acceptError } = await client.functions.invoke("accept-invitation", {
-        body: {
-          code,
-          job_title: jobTitle,
-          key_activities: keyActivities,
-        },
-      });
-      if (acceptError) throw new Error(acceptError.message);
-      if (acceptData && (acceptData as any).error) throw new Error((acceptData as any).error);
-
-      // 4. Refresh the auth context so the workspace is loaded.
-      await refreshWorkspace();
-
-      toast({
-        title: `Welcome to ${invite?.company_name}`,
-        description: "Taking you to your workspace…",
-      });
-
-      navigate("/app", { replace: true });
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setSubmitting(false);
+      setPhase("accepted");
+      setTimeout(() => navigate("/app", { replace: true }), 1200);
+    } catch (e) {
+      setErrorMsg(e instanceof Error ? e.message : "Unknown error");
+      setPhase("error");
     }
-  };
+  }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-6 h-6 text-text-secondary animate-spin" />
-      </div>
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    // Then bounce to sign-up with the token preserved so they come back here.
+    navigate(`/sign-up?invitation=${encodeURIComponent(token)}`, {
+      replace: true,
+    });
+  }
+
+  function goToSignUp() {
+    // Preserve the token through sign-up so we land back on /join after.
+    navigate(
+      `/sign-up?invitation=${encodeURIComponent(token)}&email=${encodeURIComponent(
+        lookup?.invitee_email ?? "",
+      )}`,
+      { replace: true },
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <div className="text-center space-y-4 max-w-md">
-          <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
-          <h1 className="text-[24px] font-display font-semibold text-foreground tracking-[-0.015em]">Invalid invite</h1>
-          <p className="text-[14px] text-text-secondary">{error}</p>
-          <Button onClick={() => navigate("/")} className="btn-primary">Go to Atlas</Button>
-        </div>
-      </div>
+  function goToSignIn() {
+    navigate(
+      `/sign-in?invitation=${encodeURIComponent(token)}&email=${encodeURIComponent(
+        lookup?.invitee_email ?? "",
+      )}`,
+      { replace: true },
     );
   }
 
+  // Render -----------------------------------------------------------------
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen flex flex-col bg-background"
-    >
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <AtlasLogo />
-      </header>
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-foreground flex items-center justify-center mx-auto">
-              <Shield className="w-6 h-6 text-background" strokeWidth={1.75} />
-            </div>
-            <h1 className="text-[28px] font-display font-semibold text-foreground tracking-[-0.018em] leading-[1.1]">
-              Join {invite?.company_name}
+    <div className="flex min-h-screen items-center justify-center bg-[#fbfaf5] px-6">
+      <div className="w-full max-w-md">
+        {phase === "loading" && (
+          <Card>
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-600" />
+            <h1 className="mt-4 text-center text-xl font-semibold text-slate-900">
+              Looking up your invitation…
             </h1>
-            <p className="text-[14px] text-text-secondary">
-              Create your Atlas account using your{" "}
-              <span className="font-mono text-foreground">@{invite?.email_domain}</span> work email.
+          </Card>
+        )}
+
+        {phase === "needs_signup" && lookup && (
+          <Card>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              You're invited to <span className="text-orange-600">{lookup.workspace_name}</span>
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">
+              <span className="font-medium text-slate-900">{lookup.inviter_name}</span>{" "}
+              invited <span className="font-medium text-slate-900">{lookup.invitee_email}</span>{" "}
+              to join as a <span className="font-medium text-slate-900">{lookup.role}</span>.
             </p>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-            <div className="space-y-2">
-              <label className="text-[12.5px] font-medium text-text-secondary">Work email</label>
-              <Input
-                type="email"
-                placeholder={`you@${invite?.email_domain}`}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              {email && !emailDomainMatches && (
-                <p className="text-[11.5px] text-destructive flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Email must be @{invite?.email_domain}
-                </p>
-              )}
+            <div className="mt-5 flex flex-col gap-2">
+              <Button
+                onClick={goToSignUp}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Create account & join
+              </Button>
+              <Button variant="ghost" onClick={goToSignIn}>
+                I already have an account
+              </Button>
             </div>
+            <p className="mt-3 text-center text-xs text-slate-500">
+              Invitation expires{" "}
+              {new Date(lookup.expires_at).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          </Card>
+        )}
 
-            <div className="space-y-2">
-              <label className="text-[12.5px] font-medium text-text-secondary">Password</label>
-              <Input
-                type="password"
-                placeholder="Min 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+        {phase === "needs_signin_other_email" && lookup && (
+          <Card>
+            <ShieldAlert className="mx-auto h-8 w-8 text-amber-600" />
+            <h1 className="mt-4 text-center text-xl font-semibold text-slate-900">
+              Wrong account
+            </h1>
+            <p className="mt-2 text-center text-sm text-slate-600">
+              This invitation was sent to{" "}
+              <span className="font-medium text-slate-900">
+                {lookup.invitee_email}
+              </span>
+              , but you're signed in as{" "}
+              <span className="font-medium text-slate-900">{user?.email}</span>.
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              <Button
+                onClick={handleSignOut}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Sign out and try again
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/app", { replace: true })}
+              >
+                Stay signed in to my account
+              </Button>
             </div>
+          </Card>
+        )}
 
-            <div className="space-y-2">
-              <label className="text-[12.5px] font-medium text-text-secondary">Job title</label>
-              <Input
-                placeholder="e.g. Operations Manager"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[12.5px] font-medium text-text-secondary">Key activities</label>
-              <Input
-                placeholder="e.g. Managing schedules, procurement"
-                value={keyActivities}
-                onChange={(e) => setKeyActivities(e.target.value)}
-              />
-            </div>
-
+        {phase === "ready_to_accept" && lookup && (
+          <Card>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Join <span className="text-orange-600">{lookup.workspace_name}</span>?
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">
+              You'll join as a{" "}
+              <span className="font-medium text-slate-900">{lookup.role}</span>.
+            </p>
             <Button
-              className="w-full gap-2 btn-amber"
-              disabled={!emailDomainMatches || password.length < 6 || !jobTitle.trim() || submitting}
-              onClick={handleSignUp}
+              onClick={handleAccept}
+              className="mt-5 w-full bg-orange-600 hover:bg-orange-700"
             >
-              {submitting ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Creating account…
-                </>
-              ) : (
-                <>
-                  Join {invite?.company_name}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
+              Accept invitation
             </Button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+          </Card>
+        )}
 
-export default JoinPage;
+        {phase === "accepting" && (
+          <Card>
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-600" />
+            <h1 className="mt-4 text-center text-xl font-semibold text-slate-900">
+              Joining…
+            </h1>
+          </Card>
+        )}
+
+        {phase === "accepted" && lookup && (
+          <Card>
+            <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+            <h1 className="mt-4 text-center text-xl font-semibold text-slate-900">
+              Welcome to {lookup.workspace_name}
+            </h1>
+            <p className="mt-2 text-center text-sm text-slate-600">
+              Taking you to your dashboard…
+            </p>
+          </Card>
+        )}
+
+        {phase === "error" && (
+          <Card>
+            {errorKey === "invitation_expired" ? (
+              <Clock className="mx-auto h-8 w-8 text-amber-600" />
+            ) : (
+              <AlertCircle className="mx-auto h-8 w-8 text-red-600" />
+            )}
+            <h1 className="mt-4 text-center text-xl font-semibold text-slate-900">
+              {errorTitle(errorKey)}
+            </h1>
+            <p className="mt-2 text-center text-sm text-slate-600">
+              {errorBody(errorKey, errorMsg)}
+            </p>
+            <div className="mt-5 flex flex-col gap-2">
+              {errorKey === "invitation_email_mismatch" && (
+                <Button
+                  onClick={handleSignOut}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  Sign out and try with the right email
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/", { replace: true })}
+              >
+                Back to home
+              </Button>
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+      {children}
+    </div>
+  );
+}
+
+function errorTitle(key: LookupError | null): string {
+  switch (key) {
+    case "invitation_not_found":
+      return "Invitation not found";
+    case "invitation_already_accepted":
+      return "Already accepted";
+    case "invitation_revoked":
+      return "Invitation revoked";
+    case "invitation_expired":
+      return "Invitation expired";
+    case "invitation_email_mismatch":
+      return "Wrong account";
+    case "lookup_failed":
+    default:
+      return "Something went wrong";
+  }
+}
+
+function errorBody(key: LookupError | null, fallback: string | null): string {
+  switch (key) {
+    case "invitation_not_found":
+      return "This link doesn't match any invitation. Double-check the URL or ask the sender to invite you again.";
+    case "invitation_already_accepted":
+      return "This invitation has already been used. If you're the recipient, sign in to access your workspace.";
+    case "invitation_revoked":
+      return "The workspace admin revoked this invitation. Ask them to send a new one if you still need access.";
+    case "invitation_expired":
+      return "Invitations expire after 7 days. Ask the sender to invite you again.";
+    case "invitation_email_mismatch":
+      return "This invitation is for a different email address than the one you're signed in with.";
+    case "lookup_failed":
+    default:
+      return fallback ?? "Try refreshing the page. If the problem continues, contact the person who invited you.";
+  }
+}

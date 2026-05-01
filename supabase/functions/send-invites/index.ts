@@ -1,15 +1,6 @@
-// supabase/functions/send-invites/index.ts
-//
-// Sends team invitations. Workspace-aware version.
-//   1. Authenticates the caller
-//   2. Finds (or creates) the master invitation for their workspace
-//   3. Persists each recipient in invite_emails
-//   4. Sends magic-link emails via Resend if configured
-//
-// Replaces the previous version which was tied to user_id, not workspace_id.
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// deno-lint-ignore-file no-explicit-any
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,216 +9,264 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-interface InvitePayload {
-  invitations: Array<{ email: string; role: "Member" | "Admin" }>;
-  origin?: string;
+interface InviteInput {
+  email: string;
+  role: "member" | "admin";
 }
 
-const isValidEmail = (e: string) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length < 255;
+interface RequestBody {
+  workspace_id: string;
+  invites: InviteInput[];
+}
 
-serve(async (req) => {
+interface InviteResult {
+  email: string;
+  status: "sent" | "failed" | "already_member";
+  error?: string;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_INVITES_PER_REQUEST = 25;
+
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const authHeader = req.headers.get("Authorization") || "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorised" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ----- Auth -----
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) return json({ error: "Missing authorization" }, 401);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const siteUrl = Deno.env.get("SITE_URL") ??
+      Deno.env.get("PUBLIC_SITE_URL") ??
+      "";
+
+    if (!supabaseUrl || !anonKey || !serviceKey) {
+      console.error("[send-invites] Missing required env vars");
+      return json({ error: "Server misconfigured" }, 500);
+    }
+    if (!siteUrl) {
+      console.error(
+        "[send-invites] SITE_URL not set — emails won't have a working join link",
+      );
+      return json(
+        {
+          error:
+            "SITE_URL env var is not configured on the function. Set it to your app's base URL (e.g. https://atlasintelligencesystems.lovable.app).",
+        },
+        500,
+      );
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    // ----- Identify the caller -----
+    const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorised" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const { data: userRes, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userRes?.user) {
+      return json({ error: "Not authenticated" }, 401);
+    }
+    const caller = userRes.user;
+
+    // ----- Parse + validate input -----
+    const body = (await req.json().catch(() => null)) as RequestBody | null;
+    if (!body?.workspace_id || !Array.isArray(body.invites)) {
+      return json({ error: "Invalid request body" }, 400);
     }
 
-    const body = (await req.json()) as InvitePayload;
-    const list = Array.isArray(body.invitations) ? body.invitations : [];
-    const cleaned = list
-      .map((row) => ({
-        email: typeof row.email === "string" ? row.email.trim().toLowerCase() : "",
-        role: row.role === "Admin" ? "Admin" : "Member",
-      }))
-      .filter((r) => r.email && isValidEmail(r.email));
+    const workspaceId = String(body.workspace_id);
+    const invites = body.invites.slice(0, MAX_INVITES_PER_REQUEST);
 
-    if (cleaned.length === 0) {
-      return new Response(
-        JSON.stringify({ ok: true, sent: 0, message: "No valid emails." }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-
-    // Find the user's workspace (must be a member, ideally an admin/owner).
-    const { data: membership } = await admin
+    // ----- Authorization: caller must be admin/owner of the workspace -----
+    // We do this through the auth client (RLS-respecting) as defence in depth,
+    // even though we'll switch to service-role for the inserts.
+    const { data: membership, error: memErr } = await authClient
       .from("workspace_members")
-      .select("workspace_id, role, workspaces:workspace_id ( id, name, email_domain )")
-      .eq("user_id", user.id)
-      .order("joined_at", { ascending: true })
-      .limit(1)
+      .select("role")
+      .eq("workspace_id", workspaceId)
+      .eq("user_id", caller.id)
       .maybeSingle();
 
-    if (!membership || !membership.workspace_id) {
-      return new Response(
-        JSON.stringify({ error: "You are not a member of any workspace yet." }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    if (memErr) {
+      console.error("[send-invites] membership lookup failed", memErr);
+      return json({ error: "Could not verify membership" }, 500);
+    }
+    if (!membership) {
+      return json({ error: "Not a member of this workspace" }, 403);
+    }
+    if (membership.role !== "owner" && membership.role !== "admin") {
+      return json({ error: "Only admins can invite" }, 403);
     }
 
-    if (!["owner", "admin"].includes(membership.role)) {
-      return new Response(
-        JSON.stringify({ error: "Only workspace admins can send invitations." }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
+    // ----- Service-role client for writes + email sending -----
+    const admin = createClient(supabaseUrl, serviceKey);
 
-    const ws = membership.workspaces as any;
-    const companyName = ws?.name || "My Company";
-    const emailDomain = ws?.email_domain || (user.email || "").split("@")[1] || "team.atlas";
-
-    // Find or create the workspace's master invitation.
-    let { data: invitation } = await admin
-      .from("invitations")
-      .select("id, invite_code, company_name, email_domain")
-      .eq("workspace_id", membership.workspace_id)
-      .limit(1)
+    // Workspace name for the email subject + caller name for personalization.
+    const { data: workspace } = await admin
+      .from("workspaces")
+      .select("name")
+      .eq("id", workspaceId)
       .maybeSingle();
 
-    if (!invitation) {
-      const { data: created, error: createErr } = await admin
-        .from("invitations")
-        .insert({
-          workspace_id: membership.workspace_id,
-          invited_by: user.id,
-          email_domain: emailDomain,
-          company_name: companyName,
-        })
-        .select("id, invite_code, company_name, email_domain")
-        .single();
+    const { data: callerProfile } = await admin
+      .from("profiles")
+      .select("display_name")
+      .eq("id", caller.id)
+      .maybeSingle();
 
-      if (createErr || !created) {
-        console.error("invitation create error:", createErr);
-        return new Response(
-          JSON.stringify({ error: "Could not create invitation." }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      invitation = created;
-    }
+    const inviterName =
+      callerProfile?.display_name?.trim() ||
+      caller.email?.split("@")[0] ||
+      "A teammate";
+    const workspaceName = workspace?.name ?? "Atlas";
 
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    const FROM = Deno.env.get("CONTACT_FROM_EMAIL") || "onboarding@resend.dev";
-    const origin = (body.origin || "https://atlas-brain-builder.lovable.app").replace(/\/$/, "");
-    const joinUrl = `${origin}/join/${invitation.invite_code}`;
+    // ----- Process invites -----
+    const results: InviteResult[] = [];
 
-    let sent = 0;
-    let failed = 0;
+    for (const invite of invites) {
+      const email = (invite.email ?? "").trim().toLowerCase();
+      const role = invite.role === "admin" ? "admin" : "member";
 
-    for (const row of cleaned) {
-      const { error: insertErr } = await admin
-        .from("invite_emails")
-        .upsert(
-          {
-            invitation_id: invitation.id,
-            invited_by: user.id,
-            recipient_email: row.email,
-            role: row.role,
-            status: "pending",
-          },
-          { onConflict: "invitation_id,recipient_email" },
-        );
-
-      if (insertErr) {
-        console.error("invite_emails upsert error:", insertErr);
-        failed++;
+      if (!email || !EMAIL_RE.test(email)) {
+        results.push({ email, status: "failed", error: "Invalid email" });
         continue;
       }
 
-      if (RESEND_API_KEY) {
-        try {
-          const subject = `${companyName} invited you to Atlas`;
-          const text =
-            `You've been invited to join ${companyName} on Atlas.\n\n` +
-            `Join here: ${joinUrl}\n\n` +
-            `Atlas is the AI workspace that knows how your business actually works.`;
+      try {
+        // Skip if already a member.
+        const { data: existingUser } = await admin
+          .from("profiles")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
 
-          const html =
-            `<p>You've been invited to join <strong>${companyName}</strong> on Atlas.</p>` +
-            `<p><a href="${joinUrl}" style="display:inline-block;padding:10px 16px;background:#1E293B;color:#fff;text-decoration:none;border-radius:6px;">Join your team</a></p>` +
-            `<p style="color:#475569;font-size:13px;">Or paste this link in your browser:<br><code>${joinUrl}</code></p>`;
+        if (existingUser?.id) {
+          const { data: existingMember } = await admin
+            .from("workspace_members")
+            .select("user_id")
+            .eq("workspace_id", workspaceId)
+            .eq("user_id", existingUser.id)
+            .maybeSingle();
+          if (existingMember) {
+            results.push({ email, status: "already_member" });
+            continue;
+          }
+        }
 
-          const r = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${RESEND_API_KEY}`,
-              "Content-Type": "application/json",
+        // Generate a token. We can't use the DB function here easily because
+        // we want it in a single insert, so we generate client-side using
+        // the same approach (24 random bytes, base64).
+        const tokenBytes = new Uint8Array(24);
+        crypto.getRandomValues(tokenBytes);
+        const token = btoa(String.fromCharCode(...tokenBytes))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+
+        // Upsert: if there's already a pending invitation for this
+        // (workspace, email), replace it. The unique partial index on
+        // (workspace_id, lower(email)) WHERE status = 'pending' makes
+        // this safe.
+        await admin
+          .from("invitations")
+          .delete()
+          .eq("workspace_id", workspaceId)
+          .ilike("email", email)
+          .eq("status", "pending");
+
+        const { error: insertErr } = await admin.from("invitations").insert({
+          workspace_id: workspaceId,
+          email,
+          role,
+          token,
+          status: "pending",
+          expires_at: expiresAt.toISOString(),
+          invited_by: caller.id,
+        });
+
+        if (insertErr) {
+          console.error("[send-invites] insert failed", insertErr);
+          results.push({
+            email,
+            status: "failed",
+            error: "Could not create invitation",
+          });
+          continue;
+        }
+
+        // Send the email. Supabase's inviteUserByEmail handles two cases:
+        //  - User doesn't exist: creates an auth user and sends invite email
+        //    with a magic link that signs them in
+        //  - User exists: sends them an email anyway (we need this for
+        //    cross-workspace invites, but the link still routes them to /join)
+        const joinUrl = `${siteUrl.replace(/\/$/, "")}/join/${encodeURIComponent(token)}`;
+
+        const { error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
+          email,
+          {
+            redirectTo: joinUrl,
+            data: {
+              workspace_id: workspaceId,
+              workspace_name: workspaceName,
+              inviter_name: inviterName,
+              invitation_token: token,
             },
-            body: JSON.stringify({ from: FROM, to: [row.email], subject, text, html }),
+          },
+        );
+
+        if (inviteErr) {
+          // If user already exists, inviteUserByEmail may fail. Fall back
+          // to magic-link generation which works for existing users.
+          console.warn(
+            "[send-invites] inviteUserByEmail failed, trying magiclink",
+            inviteErr.message,
+          );
+
+          const { error: linkErr } = await admin.auth.admin.generateLink({
+            type: "magiclink",
+            email,
+            options: { redirectTo: joinUrl },
           });
 
-          if (r.ok) {
-            sent++;
-            await admin
-              .from("invite_emails")
-              .update({ status: "sent", sent_at: new Date().toISOString() })
-              .eq("invitation_id", invitation.id)
-              .eq("recipient_email", row.email);
-          } else {
-            failed++;
-            await admin
-              .from("invite_emails")
-              .update({ status: "failed" })
-              .eq("invitation_id", invitation.id)
-              .eq("recipient_email", row.email);
+          if (linkErr) {
+            console.error("[send-invites] generateLink also failed", linkErr);
+            results.push({
+              email,
+              status: "failed",
+              error: linkErr.message,
+            });
+            continue;
           }
-        } catch (e) {
-          console.error("Resend send failed:", e);
-          failed++;
         }
-      } else {
-        sent++; // store-only, treat as success
+
+        results.push({ email, status: "sent" });
+      } catch (e: any) {
+        console.error("[send-invites] per-invite error", e);
+        results.push({
+          email,
+          status: "failed",
+          error: e?.message ?? "Unknown error",
+        });
       }
     }
 
-    return new Response(
-      JSON.stringify({ ok: true, sent, failed, joinUrl }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
-  } catch (e) {
-    console.error("send-invites unexpected error:", e);
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ ok: true, results });
+  } catch (e: any) {
+    console.error("[send-invites] unhandled", e);
+    return json({ error: "Unhandled error" }, 500);
   }
 });
+
+function json(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}

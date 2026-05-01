@@ -1,61 +1,99 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+// deno-lint-ignore-file no-explicit-any
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
+/**
+ * Looks up an invitation by token. Anonymous endpoint — no auth required —
+ * because the join page renders BEFORE the user signs in.
+ *
+ * Returns ONLY display info: workspace name, inviter name, invitee email,
+ * role, expiry. Never exposes data that could be used to enumerate other
+ * invitations or workspaces.
+ */
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const { code } = await req.json();
-    if (!code || typeof code !== "string") {
-      return json({ error: "Missing invite code" }, 400);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      return json({ error: "Server misconfigured" }, 500);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    const body = (await req.json().catch(() => null)) as
+      | { token?: string }
+      | null;
+    const token = body?.token?.trim();
+    if (!token) return json({ error: "Missing token" }, 400);
 
-    const { data, error } = await supabase
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    // Lookup by token.
+    const { data: invitation, error: invErr } = await admin
       .from("invitations")
-      .select("company_name, email_domain, expires_at, uses, max_uses")
-      .eq("invite_code", code)
+      .select(
+        "id, workspace_id, email, role, status, expires_at, invited_by",
+      )
+      .eq("token", token)
       .maybeSingle();
 
-    if (error) {
-      console.error("invitation-lookup error:", error);
+    if (invErr) {
+      console.error("[invitation-lookup] query failed", invErr);
       return json({ error: "Lookup failed" }, 500);
     }
-    if (!data) return json({ error: "This invite link is invalid." }, 200);
+    if (!invitation) {
+      return json({ error: "invitation_not_found" }, 404);
+    }
 
-    if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      return json({ error: "This invite link has expired." }, 200);
-    }
-    if ((data.uses ?? 0) >= (data.max_uses ?? 50)) {
-      return json({ error: "This invite link has been fully used." }, 200);
-    }
+    // Resolve workspace name + inviter display name in parallel.
+    const [wsRes, inviterRes] = await Promise.all([
+      admin
+        .from("workspaces")
+        .select("name")
+        .eq("id", invitation.workspace_id)
+        .maybeSingle(),
+      invitation.invited_by
+        ? admin
+            .from("profiles")
+            .select("display_name, email")
+            .eq("id", invitation.invited_by)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const inviter = inviterRes.data as
+      | { display_name: string | null; email: string | null }
+      | null;
 
     return json({
-      invitation: {
-        company_name: data.company_name,
-        email_domain: data.email_domain,
-      },
+      ok: true,
+      workspace_name: wsRes.data?.name ?? "an Atlas workspace",
+      invitee_email: invitation.email,
+      role: invitation.role,
+      status: invitation.status,
+      expires_at: invitation.expires_at,
+      inviter_name:
+        inviter?.display_name?.trim() ||
+        inviter?.email?.split("@")[0] ||
+        "Someone",
     });
-  } catch (e) {
-    console.error(e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+  } catch (e: any) {
+    console.error("[invitation-lookup] unhandled", e);
+    return json({ error: "Unhandled error" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+function json(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
