@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ProtectedRoute, RedirectIfAuthenticated } from "@/components/auth/ProtectedRoute";
+import { WaitlistGate } from "@/components/atlas/WaitlistGate";
 import Landing from "./pages/Landing.tsx";
 import GetStarted from "./pages/GetStarted.tsx";
 import Workspace from "./pages/Workspace.tsx";
@@ -23,7 +24,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <WaitlistGate>
+            <Routes>
             <Route path="/" element={<Landing />} />
 
             {/* Auth pages — redirect to /app if already signed in */}
@@ -52,7 +54,8 @@ const App = () => (
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </WaitlistGate>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

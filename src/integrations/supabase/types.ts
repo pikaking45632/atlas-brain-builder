@@ -611,6 +611,36 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_signups: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string
+          id: string
+          ip_hash: string | null
+          source: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          ip_hash?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          ip_hash?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       workspace_members: {
         Row: {
           id: string
