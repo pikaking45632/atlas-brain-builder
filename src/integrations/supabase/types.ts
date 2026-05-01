@@ -573,21 +573,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_workspace_with_owner: {
-        Args: {
-          p_business_type: string
-          p_country: string
-          p_email_domain: string
-          p_industry: string
-          p_name: string
-          p_plan: string
-          p_selected_modules: Json
-          p_slug: string
-          p_team_size: string
-          p_user_id: string
-        }
-        Returns: string
-      }
       current_user_workspace_id: { Args: never; Returns: string }
       increment_invitation_uses: {
         Args: { p_invite_code: string }

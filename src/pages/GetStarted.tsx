@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import { useAuth } from "@/components/auth/AuthProvider";
 import StepPricing from "@/components/atlas/StepPricing";
@@ -12,63 +11,63 @@ import StepModules from "@/components/atlas/StepModules";
 import StepReview from "@/components/atlas/StepReview";
 import StepPreparing from "@/components/atlas/StepPreparing";
 import StepReady from "@/components/atlas/StepReady";
+import UploadDocuments from "@/components/atlas/UploadDocuments";
+import InviteColleagues from "@/components/atlas/InviteColleagues";
+import ConnectSources from "@/components/atlas/ConnectSources";
 
-/**
- * Onboarding wizard host.
- *
- * Flow (drives `useOnboarding().step`):
- *   1 Pricing → 2 Account (skipped if already signed in) → 3 Company →
- *   4 Workplace → 5 Modules → 6 Review → 7 Preparing → 8 Ready
- *
- * Workspace creation happens at the final step (StepReady) by calling the
- * `create-workspace` edge function with the wizard data.
- */
-export default function GetStarted() {
+const GetStarted = () => {
+  const { step } = useOnboarding();
+  const { user, workspace, initialized } = useAuth();
   const navigate = useNavigate();
-  const { user, workspace, loading } = useAuth();
-  const { step, setStep } = useOnboarding();
 
-  // If the user already has a workspace, send them straight to the app —
-  // the wizard is only for fresh accounts.
+  // Auth gate: steps 1–7 are anonymous (browse pricing, configure modules).
+  // From step 8 onwards (upload, invite, sources) we need a real account so
+  // documents/invites are persisted to the right user. If the user hits
+  // step 8+ without auth, redirect to sign-up. They land back here when done.
   useEffect(() => {
-    if (loading) return;
-    if (workspace) {
+    if (!initialized) return;
+    if (step >= 8 && !user) {
+      navigate("/sign-up", { replace: true });
+    }
+  }, [step, user, initialized, navigate]);
+
+  // RETURNING USER REDIRECT — only fires on step 1 (a fresh /get-started visit).
+  //
+  // Important: we deliberately do NOT redirect mid-flow when a workspace gets
+  // created. UploadDocuments and InviteColleagues lazily create the workspace
+  // via ensureWorkspace() — if this effect fired the moment a workspace
+  // appeared, it would bounce the user to /app mid-upload, and ProtectedRoute
+  // (which reads from a stale auth state) might bounce them back to /sign-in.
+  //
+  // Only auto-redirect when the user is at step 1 (or earlier) — meaning
+  // they're genuinely returning to /get-started rather than progressing
+  // through it.
+  useEffect(() => {
+    if (!initialized) return;
+    if (user && workspace && step <= 1) {
       navigate("/app", { replace: true });
     }
-  }, [workspace, loading, navigate]);
-
-  // If the user landed on the auth step but is already signed in, jump
-  // forward to the Company step.
-  useEffect(() => {
-    if (loading) return;
-    if (user && step === 2) setStep(3);
-    // If they're not signed in and the wizard tries to skip past Account,
-    // bounce them back to step 1 so they can pick a plan first.
-    if (!user && step > 2) setStep(1);
-  }, [user, step, loading, setStep]);
-
-  // Visible loading state — never return null.
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin" />
-          <span>Loading…</span>
-        </div>
-      </div>
-    );
-  }
+  }, [initialized, user, workspace, step, navigate]);
 
   return (
-    <AnimatePresence mode="wait">
-      {step === 1 && <StepPricing key="pricing" />}
-      {step === 2 && <StepWelcome key="welcome" />}
-      {step === 3 && <StepCompany key="company" />}
-      {step === 4 && <StepWorkplace key="workplace" />}
-      {step === 5 && <StepModules key="modules" />}
-      {step === 6 && <StepReview key="review" />}
-      {step === 7 && <StepPreparing key="preparing" />}
-      {step === 8 && <StepReady key="ready" />}
-    </AnimatePresence>
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      <div className="relative z-10">
+        <AnimatePresence mode="wait">
+          {step === 1  && <StepPricing      key="pricing"   />}
+          {step === 2  && <StepWelcome      key="welcome"   />}
+          {step === 3  && <StepCompany      key="company"   />}
+          {step === 4  && <StepWorkplace    key="workplace" />}
+          {step === 5  && <StepModules      key="modules"   />}
+          {step === 6  && <StepReview       key="review"    />}
+          {step === 7  && <StepPreparing    key="preparing" />}
+          {step === 8  && <UploadDocuments  key="upload"    />}
+          {step === 9  && <InviteColleagues key="invite"    />}
+          {step === 10 && <ConnectSources   key="sources"   />}
+          {step === 11 && <StepReady        key="ready"     />}
+        </AnimatePresence>
+      </div>
+    </div>
   );
-}
+};
+
+export default GetStarted;
