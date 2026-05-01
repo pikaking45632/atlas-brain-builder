@@ -571,6 +571,7 @@ const Landing = () => {
         onClose={() => setContactOpen(false)}
         source={contactSource}
       />
+      <JoinByLinkModal open={joinOpen} onOpenChange={setJoinOpen} />
     </div>
   );
 };
