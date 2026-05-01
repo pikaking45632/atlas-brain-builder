@@ -189,6 +189,9 @@ serve(async (req: Request) => {
           status: "pending",
           expires_at: expiresAt.toISOString(),
           invited_by: caller.id,
+          // Legacy NOT NULL columns retained on the table.
+          company_name: workspaceName,
+          email_domain: (email.split("@")[1] || "").toLowerCase(),
         });
 
         if (insertErr) {
