@@ -24,8 +24,12 @@ export function useWaitlistGate() {
     return { showGate: false, loading: false };
   }
 
-  // Always allow invitation acceptance, even for anonymous visitors.
-  if (location.pathname.startsWith("/join/")) {
+  // Always allow these routes through the gate, even for anonymous visitors:
+  //   /join/:code  — invited users accepting their invitation
+  //   /sign-in     — existing customers signing in to bypass the gate
+  //   /sign-up     — invited users completing sign-up after clicking through /join
+  const ALWAYS_OPEN_PATHS = ["/join/", "/sign-in", "/sign-up"];
+  if (ALWAYS_OPEN_PATHS.some((p) => location.pathname.startsWith(p))) {
     return { showGate: false, loading: false };
   }
 
