@@ -14,6 +14,7 @@ import SignUp from "./pages/SignUp.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import JoinPage from "./pages/JoinPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
+import AdminWaitlistPage from "./pages/AdminWaitlistPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,9 @@ const App = () => (
 
             {/* Public invite acceptance */}
             <Route path="/join/:code" element={<JoinPage />} />
+
+            {/* Admin — handles its own auth/role/password gating */}
+            <Route path="/admin/waitlist" element={<AdminWaitlistPage />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
