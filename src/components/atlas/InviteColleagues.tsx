@@ -73,7 +73,7 @@ const InviteColleagues = () => {
               invited_by: user.id,
               email_domain: emailDomain,
               company_name: onboarding.companyName || "My Company",
-            })
+            } as any)
             .select("invite_code")
             .single();
           if (error) throw error;
