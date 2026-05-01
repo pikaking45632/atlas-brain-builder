@@ -27,6 +27,7 @@ import { KnowledgeView } from "@/components/atlas/KnowledgeView";
 import { TeamView } from "@/components/atlas/TeamView";
 import { SoftLaunchModal } from "@/components/atlas/SoftLaunchModal";
 import ConnectSources from "@/components/atlas/ConnectSources";
+import { InviteModal } from "@/components/atlas/InviteModal";
 
 interface DocRow {
   id: string;
@@ -58,6 +59,7 @@ const Workspace = () => {
   const palette = useCommandPalette();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   // Sticky-nav scroll-shrink
   useEffect(() => {
@@ -150,10 +152,7 @@ const Workspace = () => {
     input.click();
   };
 
-  const goToInvites = () => {
-    sessionStorage.setItem("invite_return_to", "/app");
-    navigate("/get-started");
-  };
+  const goToInvites = () => setInviteOpen(true);
 
   const initial = user?.email?.[0]?.toUpperCase() || "A";
 
@@ -412,6 +411,8 @@ const Workspace = () => {
         shippingSignal="Coming with the next pilot release."
         workspaceId={workspace?.id ?? null}
       />
+
+      <InviteModal open={inviteOpen} onOpenChange={setInviteOpen} />
     </motion.div>
   );
 };
