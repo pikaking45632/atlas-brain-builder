@@ -140,16 +140,16 @@ serve(async (req: Request) => {
         // Skip if already a member.
         const { data: existingUser } = await admin
           .from("profiles")
-          .select("id")
+          .select("user_id")
           .eq("email", email)
           .maybeSingle();
 
-        if (existingUser?.id) {
+        if (existingUser?.user_id) {
           const { data: existingMember } = await admin
             .from("workspace_members")
             .select("user_id")
             .eq("workspace_id", workspaceId)
-            .eq("user_id", existingUser.id)
+            .eq("user_id", existingUser.user_id)
             .maybeSingle();
           if (existingMember) {
             results.push({ email, status: "already_member" });
