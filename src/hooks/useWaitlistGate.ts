@@ -17,7 +17,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export const WAITLIST_MODE = true;
 
 export function useWaitlistGate() {
-  const { user, loading } = useAuth();
+  const { user, initialized } = useAuth();
   const location = useLocation();
 
   if (!WAITLIST_MODE) {
@@ -29,8 +29,8 @@ export function useWaitlistGate() {
     return { showGate: false, loading: false };
   }
 
-  // Wait for auth state to settle before deciding.
-  if (loading) {
+  // Wait for the initial auth check to complete before deciding.
+  if (!initialized) {
     return { showGate: false, loading: true };
   }
 
