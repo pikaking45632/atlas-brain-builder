@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
 import ContactSalesModal from "@/components/atlas/ContactSalesModal";
+import { JoinByLinkModal } from "@/components/atlas/JoinByLinkModal";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -22,6 +23,7 @@ const Landing = () => {
   const [contactSource, setContactSource] = useState("landing_page");
   const [shrunk, setShrunk] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [joinOpen, setJoinOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setShrunk(window.scrollY > 80);
@@ -64,6 +66,12 @@ const Landing = () => {
             >
               Sign in
             </Link>
+            <button
+              onClick={() => setJoinOpen(true)}
+              className="hidden sm:inline-flex h-9 px-3 items-center text-[13px] text-text-secondary hover:text-foreground transition-colors"
+            >
+              Join your team
+            </button>
             <Link
               to="/sign-up"
               className="btn-amber h-9 px-4 inline-flex items-center gap-1.5 text-[13px]"
@@ -563,6 +571,7 @@ const Landing = () => {
         onClose={() => setContactOpen(false)}
         source={contactSource}
       />
+      <JoinByLinkModal open={joinOpen} onOpenChange={setJoinOpen} />
     </div>
   );
 };

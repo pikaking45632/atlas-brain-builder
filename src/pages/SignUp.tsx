@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, AlertCircle, Loader2, Check } from "lucide-react";
 import AtlasLogo from "@/components/atlas/AtlasLogo";
@@ -10,9 +10,12 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const SignUp = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
+  const prefillEmail = searchParams.get("email") ?? "";
 
   const emailRef = useRef<HTMLInputElement>(null);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -44,7 +47,11 @@ const SignUp = () => {
     }
 
     if (user) {
-      navigate("/get-started", { replace: true });
+      if (invitationToken) {
+        navigate(`/join/${encodeURIComponent(invitationToken)}`, { replace: true });
+      } else {
+        navigate("/get-started", { replace: true });
+      }
     }
   };
 
@@ -93,6 +100,7 @@ const SignUp = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={!!prefillEmail}
                 className="cinematic-input w-full h-[42px] text-[14px]"
                 placeholder="aidan@company.com"
               />

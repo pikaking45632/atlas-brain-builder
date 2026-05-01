@@ -11,10 +11,12 @@ const SignIn = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const invitationToken = params.get("invitation");
+  const prefillEmail = params.get("email") ?? "";
   const next = params.get("next") || "/app";
 
   const emailRef = useRef<HTMLInputElement>(null);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -37,7 +39,11 @@ const SignIn = () => {
       setError(err);
       return;
     }
-    navigate(next, { replace: true });
+    if (invitationToken) {
+      navigate(`/join/${encodeURIComponent(invitationToken)}`, { replace: true });
+    } else {
+      navigate(next, { replace: true });
+    }
   };
 
   return (
@@ -82,6 +88,7 @@ const SignIn = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                readOnly={!!prefillEmail}
                 className="cinematic-input w-full h-[42px] text-[14px]"
                 placeholder="aidan@company.com"
               />
