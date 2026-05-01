@@ -340,38 +340,53 @@ export type Database = {
       }
       invitations: {
         Row: {
+          accepted_at: string | null
           company_name: string
           created_at: string
+          email: string | null
           email_domain: string
           expires_at: string | null
           id: string
           invite_code: string
           invited_by: string
           max_uses: number | null
+          role: string
+          status: string
+          token: string
           uses: number | null
           workspace_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
           company_name: string
           created_at?: string
+          email?: string | null
           email_domain: string
           expires_at?: string | null
           id?: string
           invite_code?: string
           invited_by: string
           max_uses?: number | null
+          role?: string
+          status?: string
+          token: string
           uses?: number | null
           workspace_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
           company_name?: string
           created_at?: string
+          email?: string | null
           email_domain?: string
           expires_at?: string | null
           id?: string
           invite_code?: string
           invited_by?: string
           max_uses?: number | null
+          role?: string
+          status?: string
+          token?: string
           uses?: number | null
           workspace_id?: string | null
         }
@@ -573,6 +588,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { p_token: string; p_user_email: string; p_user_id: string }
+        Returns: string
+      }
       create_workspace_with_owner: {
         Args: {
           p_business_type: string
@@ -589,6 +608,7 @@ export type Database = {
         Returns: string
       }
       current_user_workspace_id: { Args: never; Returns: string }
+      generate_invitation_token: { Args: never; Returns: string }
       increment_invitation_uses: {
         Args: { p_invite_code: string }
         Returns: undefined
