@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useOnboarding } from "@/store/onboarding";
 import { useAuth } from "@/components/auth/AuthProvider";
 import StepPricing from "@/components/atlas/StepPricing";
@@ -46,7 +47,17 @@ export default function GetStarted() {
     if (!user && step > 2) setStep(1);
   }, [user, step, loading, setStep]);
 
-  if (loading) return null;
+  // Visible loading state — never return null.
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Loading…</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
