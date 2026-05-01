@@ -27,10 +27,14 @@ const corsHeaders = {
 
 interface CreatePayload {
   name?: string;
+  company_name?: string;
   industry?: string;
   team_size?: string;
   business_type?: string;
   country?: string;
+  /** New canonical key from the wizard. */
+  modules?: string[];
+  /** Legacy alias still accepted for backwards-compat. */
   selected_modules?: string[];
   plan?: string;
 }
@@ -68,13 +72,19 @@ serve(async (req) => {
     }
 
     const body = (await req.json()) as CreatePayload;
-    const name = trim(body.name, 120);
+    const name = trim(body.name || body.company_name, 120);
     if (!name || name.length < 2) {
       return new Response(JSON.stringify({ error: "Workspace name required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    // Accept either `modules` (new) or `selected_modules` (legacy).
+    const moduleList = Array.isArray(body.modules)
+      ? body.modules
+      : Array.isArray(body.selected_modules)
+        ? body.selected_modules
+        : [];
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -125,7 +135,7 @@ serve(async (req) => {
         p_team_size: trim(body.team_size, 30) || null,
         p_country: trim(body.country, 80) || null,
         p_business_type: trim(body.business_type, 80) || null,
-        p_selected_modules: Array.isArray(body.selected_modules) ? body.selected_modules : [],
+        p_selected_modules: moduleList,
         p_plan: trim(body.plan, 30) || "trial",
       });
 
