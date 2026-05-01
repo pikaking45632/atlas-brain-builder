@@ -11,3 +11,5 @@ project_id = "uaqvnynoazhpzdebfnwj"
     verify_jwt = true
   [functions.submit-contact]
     verify_jwt = false
+  [functions.waitlist-signup]
+    verify_jwt = false
