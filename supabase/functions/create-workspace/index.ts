@@ -107,63 +107,41 @@ serve(async (req) => {
       .replace(/^-+|-+$/g, "")
       .slice(0, 40);
 
-    // Try the clean slug first; if it collides, retry with a random suffix.
-    // Postgres unique violation = code "23505".
-    let ws: { id: string } | null = null;
-    let wsErr: any = null;
+    // Atomic workspace + owner-membership creation via Postgres function.
+    // If either insert fails, the whole transaction rolls back — no orphans.
+    let workspaceId: string | null = null;
+    let lastErr: any = null;
     for (let attempt = 0; attempt < 5; attempt++) {
       const slug = attempt === 0
-        ? (baseSlug || undefined)
+        ? (baseSlug || `ws-${Math.random().toString(36).slice(2, 8)}`)
         : `${baseSlug || "ws"}-${Math.random().toString(36).slice(2, 8)}`;
 
-      const res = await admin
-        .from("workspaces")
-        .insert({
-          name,
-          slug,
-          email_domain: emailDomain,
-          industry: trim(body.industry, 80) || null,
-          team_size: trim(body.team_size, 30) || null,
-          country: trim(body.country, 80) || null,
-          business_type: trim(body.business_type, 80) || null,
-          selected_modules: Array.isArray(body.selected_modules) ? body.selected_modules : [],
-          plan: trim(body.plan, 30) || "trial",
-          created_by: user.id,
-        })
-        .select("id")
-        .single();
+      const { data, error } = await admin.rpc("create_workspace_with_owner", {
+        p_user_id: user.id,
+        p_name: name,
+        p_slug: slug,
+        p_email_domain: emailDomain,
+        p_industry: trim(body.industry, 80) || null,
+        p_team_size: trim(body.team_size, 30) || null,
+        p_country: trim(body.country, 80) || null,
+        p_business_type: trim(body.business_type, 80) || null,
+        p_selected_modules: Array.isArray(body.selected_modules) ? body.selected_modules : [],
+        p_plan: trim(body.plan, 30) || "trial",
+      });
 
-      if (!res.error && res.data) {
-        ws = res.data;
-        wsErr = null;
+      if (!error && data) {
+        workspaceId = data as string;
+        lastErr = null;
         break;
       }
-      wsErr = res.error;
-      if (res.error?.code !== "23505") break; // non-collision error: bail
+      lastErr = error;
+      if (error?.code !== "23505") break; // non-collision: bail
     }
 
-    if (wsErr || !ws) {
-      console.error("workspace insert error:", wsErr);
+    if (!workspaceId) {
+      console.error("create_workspace_with_owner error:", lastErr);
       return new Response(
-        JSON.stringify({ error: "Could not create workspace" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Add the creator as the owner.
-    const { error: memberErr } = await admin
-      .from("workspace_members")
-      .insert({ workspace_id: ws.id, user_id: user.id, role: "owner" });
-
-    if (memberErr) {
-      console.error("membership insert error:", memberErr);
-      // Best-effort cleanup so we don't leave orphan workspaces.
-      await admin.from("workspaces").delete().eq("id", ws.id);
-      return new Response(
-        JSON.stringify({ error: "Could not assign workspace ownership" }),
+        JSON.stringify({ error: "Could not create workspace", details: lastErr?.message }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -177,7 +155,7 @@ serve(async (req) => {
       .upsert(
         {
           user_id: user.id,
-          workspace_id: ws.id,
+          workspace_id: workspaceId,
           company_name: name,
           email_domain: emailDomain,
         },
@@ -185,7 +163,7 @@ serve(async (req) => {
       );
 
     return new Response(
-      JSON.stringify({ workspace_id: ws.id, existed: false }),
+      JSON.stringify({ workspace_id: workspaceId, existed: false }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
