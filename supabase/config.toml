@@ -1,13 +1,13 @@
 project_id = "uaqvnynoazhpzdebfnwj"
 
-[functions.invitation-lookup]
-verify_jwt = false
-
-[functions.submit-contact]
-verify_jwt = false
-
-[functions.atlas-chat]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.atlas-chat]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.invitation-lookup]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.submit-contact]
+    verify_jwt = false
