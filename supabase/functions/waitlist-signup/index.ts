@@ -99,12 +99,9 @@ serve(async (req: Request) => {
     }
 
     // ---- Send confirmation email (best-effort, never blocks) ----
-    // Two paths: prefer Resend if RESEND_API_KEY is configured, otherwise
-    // fall back to Supabase auth's generateLink which sends a real email
-    // through whatever email infra is configured (works on Lovable Cloud
-    // and standard Supabase).
+    // Skip on duplicates so re-signups don't re-trigger the email.
     if (!alreadyOnList) {
-      sendConfirmationEmail(email, companyName).catch((err) => {
+      sendConfirmationEmail(admin, email, companyName).catch((err) => {
         console.warn("[waitlist-signup] email send failed (non-fatal)", err);
       });
     }
@@ -119,86 +116,45 @@ serve(async (req: Request) => {
   }
 });
 
+/**
+ * Sends the waitlist confirmation through Lovable Cloud's app-email system
+ * (the `send-transactional-email` Edge Function), which renders the
+ * `waitlist_confirmation` React Email template, enqueues the send for
+ * retry-safe delivery, and respects the suppression list.
+ *
+ * Best-effort: callers must wrap this in `.catch(...)` — a failure here
+ * MUST NOT fail the signup.
+ */
 async function sendConfirmationEmail(
+  admin: ReturnType<typeof createClient>,
   email: string,
   companyName: string | null,
 ) {
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  const fromAddress =
-    Deno.env.get("WAITLIST_FROM_EMAIL") ?? "Atlas <hello@atlas-ai.app>";
+  const idempotencyKey = `waitlist-confirm-${email}`;
 
-  if (resendKey) {
-    // Resend path — preferred when configured.
-    const subject = "You're on the Atlas waitlist";
-    const html = renderEmailHtml(companyName);
-
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
+  const { data, error } = await admin.functions.invoke(
+    "send-transactional-email",
+    {
+      body: {
+        templateName: "waitlist_confirmation",
+        recipientEmail: email,
+        idempotencyKey,
+        templateData: {
+          company_name: companyName,
+        },
       },
-      body: JSON.stringify({
-        from: fromAddress,
-        to: [email],
-        subject,
-        html,
-      }),
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      throw new Error(`Resend ${res.status}: ${body}`);
-    }
-    return;
-  }
-
-  // No Resend key — log so the operator knows email isn't going out yet.
-  // We don't try to use Supabase's invite/magic-link APIs here because they
-  // create auth users as a side effect, which we don't want for a waitlist.
-  console.log(
-    "[waitlist-signup] RESEND_API_KEY not set; skipping confirmation email",
+    },
   );
-}
 
-function renderEmailHtml(companyName: string | null): string {
-  const greeting = companyName
-    ? `Hi ${escapeHtml(companyName)},`
-    : "Hi there,";
-  return `
-<!DOCTYPE html>
-<html>
-<body style="margin:0;padding:0;background:#fbfaf5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;padding:40px 24px;color:#0f172a;">
-    <h1 style="font-size:24px;font-weight:600;letter-spacing:-0.02em;margin:0 0 16px;">
-      You're on the list.
-    </h1>
-    <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 16px;">
-      ${greeting}
-    </p>
-    <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 16px;">
-      Thanks for putting your name down for Atlas — the workplace that thinks with you.
-    </p>
-    <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 16px;">
-      We're letting in early customers in small batches as we make sure Atlas works the way it should for each business. You'll hear from us when it's your turn.
-    </p>
-    <p style="font-size:16px;line-height:1.6;color:#334155;margin:0 0 24px;">
-      In the meantime, if you'd like to fast-track a conversation about a pilot, just reply to this email.
-    </p>
-    <p style="font-size:14px;line-height:1.6;color:#64748b;margin:0;border-top:1px solid #e2e8f0;padding-top:16px;">
-      Atlas Intelligence Systems Ltd · Scotland, UK
-    </p>
-  </div>
-</body>
-</html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  if (error) {
+    throw new Error(
+      `send-transactional-email invoke failed: ${error.message ?? error}`,
+    );
+  }
+  console.log("[waitlist-signup] confirmation email queued", {
+    email,
+    response: data,
+  });
 }
 
 async function sha256(input: string): Promise<string> {
