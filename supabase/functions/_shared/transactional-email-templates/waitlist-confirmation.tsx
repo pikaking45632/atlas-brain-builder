@@ -6,6 +6,7 @@ import {
   Heading,
   Hr,
   Html,
+  Link,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -38,9 +39,29 @@ const WaitlistConfirmationEmail = ({ company_name }: WaitlistConfirmationProps) 
             In the meantime, if you'd like to fast-track a conversation about
             a pilot, just reply to this email.
           </Text>
+          <Text style={textWithGap}>
+            Or connect with me on{' '}
+            <Link
+              href="https://www.linkedin.com/in/aidan-howell-b04574258/"
+              style={inlineLink}
+            >
+              LinkedIn
+            </Link>
+            {' '}— happy to chat there too.
+          </Text>
+          <Text style={signatureName}>Aidan Howell</Text>
+          <Text style={signatureRole}>Co-founder, Atlas</Text>
           <Hr style={hr} />
-          <Text style={footer}>
+          <Text style={footerLine}>
             Atlas Intelligence Systems Ltd · Scotland, UK
+          </Text>
+          <Text style={footerLineLast}>
+            <Link
+              href="https://www.linkedin.com/company/atlas-intelligence-systems/"
+              style={footerLink}
+            >
+              Follow Atlas on LinkedIn
+            </Link>
           </Text>
         </Container>
       </Body>
@@ -56,7 +77,7 @@ export const template = {
 } satisfies TemplateEntry
 
 const main = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#fbfaf5',
   fontFamily:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
 }
@@ -79,13 +100,43 @@ const text = {
   color: '#334155',
   margin: '0 0 16px',
 }
+const textWithGap = {
+  ...text,
+  margin: '0 0 24px',
+}
+const inlineLink = {
+  color: '#ea580c',
+  textDecoration: 'underline',
+}
+const signatureName = {
+  fontSize: '14px',
+  lineHeight: '1.6',
+  color: '#64748b',
+  margin: '0 0 4px',
+}
+const signatureRole = {
+  fontSize: '14px',
+  lineHeight: '1.6',
+  color: '#64748b',
+  margin: '0 0 16px',
+}
 const hr = {
   borderColor: '#e2e8f0',
   margin: '24px 0 16px',
 }
-const footer = {
+const footerLine = {
+  fontSize: '14px',
+  lineHeight: '1.6',
+  color: '#64748b',
+  margin: '0 0 4px',
+}
+const footerLineLast = {
   fontSize: '14px',
   lineHeight: '1.6',
   color: '#64748b',
   margin: '0',
+}
+const footerLink = {
+  color: '#64748b',
+  textDecoration: 'underline',
 }
