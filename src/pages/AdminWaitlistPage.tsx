@@ -7,11 +7,9 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  ShieldAlert,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminPasswordPrompt } from "@/components/admin/AdminPasswordPrompt";
 
@@ -27,7 +25,6 @@ type SortKey = "created_at" | "email" | "company_name";
 type SortDir = "asc" | "desc";
 
 export default function AdminWaitlistPage() {
-  const { user, initialized } = useAuth();
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(false);
@@ -91,27 +88,6 @@ export default function AdminWaitlistPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminPassword]);
-
-  // While auth is initialising, render nothing
-  if (!initialized) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#fbfaf5]">
-        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-      </div>
-    );
-  }
-
-  // Not signed in
-  if (!user) {
-    return (
-      <DeniedScreen
-        title="Sign in required"
-        message="The admin area requires you to be signed in."
-        ctaHref="/sign-in"
-        ctaLabel="Sign in"
-      />
-    );
-  }
 
   // Need admin password
   if (!adminPassword) {
@@ -329,32 +305,4 @@ function Th({
   );
 }
 
-function DeniedScreen({
-  title,
-  message,
-  ctaHref,
-  ctaLabel,
-}: {
-  title: string;
-  message: string;
-  ctaHref: string;
-  ctaLabel: string;
-}) {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#fbfaf5] px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-7 text-center shadow-sm">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-          <ShieldAlert className="h-5 w-5 text-amber-700" />
-        </div>
-        <h1 className="mt-4 text-xl font-semibold text-slate-900">{title}</h1>
-        <p className="mt-2 text-sm text-slate-600">{message}</p>
-        <Link
-          to={ctaHref}
-          className="mt-5 inline-block rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-        >
-          {ctaLabel}
-        </Link>
-      </div>
-    </div>
-  );
-}
+
