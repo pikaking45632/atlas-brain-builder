@@ -1,6 +1,8 @@
 project_id = "uaqvnynoazhpzdebfnwj"
 
 [functions]
+  [functions.admin-waitlist-list]
+    verify_jwt = false
   [functions.atlas-chat]
     verify_jwt = false
   [functions.auth-email-hook]
