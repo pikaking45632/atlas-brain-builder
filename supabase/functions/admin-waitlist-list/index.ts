@@ -14,15 +14,12 @@ interface RequestBody {
 }
 
 /**
- * Lists waitlist signups. Two server-side checks:
- *   1. Caller must be authenticated AND have role 'owner' on at least one
- *      workspace.
- *   2. Caller must provide the correct ADMIN_PROMPT_PASSWORD env var.
+ * Lists waitlist signups. Single server-side check:
+ *   - Caller must provide the correct ADMIN_PROMPT_PASSWORD env var.
  *
- * Both must pass. The password is compared in constant time to prevent
- * timing attacks. The waitlist_signups table has no SELECT RLS policy, so
- * even leaking this function's URL to an attacker doesn't expose data —
- * they'd still need a valid owner JWT and the password.
+ * Compared in constant time to prevent timing attacks. The waitlist_signups
+ * table has no SELECT RLS policy, so the password is the only thing
+ * protecting this data — keep it strong.
  */
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -30,15 +27,11 @@ serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Missing authorization" }, 401);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const adminPassword = Deno.env.get("ADMIN_PROMPT_PASSWORD");
 
-    if (!supabaseUrl || !anonKey || !serviceKey) {
+    if (!supabaseUrl || !serviceKey) {
       console.error("[admin-waitlist-list] missing supabase env vars");
       return json({ error: "Server misconfigured" }, 500);
     }
@@ -53,43 +46,14 @@ serve(async (req: Request) => {
       );
     }
 
-    // Identify caller
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: userRes, error: userErr } = await authClient.auth.getUser();
-    if (userErr || !userRes?.user) {
-      return json({ error: "Not authenticated" }, 401);
-    }
-    const caller = userRes.user;
-
-    // Check 1: caller must be an owner on at least one workspace.
-    // We use the auth client (RLS-respecting) — defence in depth.
-    const { data: ownerRows, error: roleErr } = await authClient
-      .from("workspace_members")
-      .select("workspace_id")
-      .eq("user_id", caller.id)
-      .eq("role", "owner")
-      .limit(1);
-
-    if (roleErr) {
-      console.error("[admin-waitlist-list] role lookup failed", roleErr);
-      return json({ error: "Could not verify role" }, 500);
-    }
-    if (!ownerRows || ownerRows.length === 0) {
-      return json({ error: "Forbidden — owner role required" }, 403);
-    }
-
-    // Check 2: admin password.
+    // Admin password check.
     const body = (await req.json().catch(() => null)) as RequestBody | null;
     const provided = body?.admin_password ?? "";
     if (!constantTimeEqual(provided, adminPassword)) {
-      // Generic error so attackers can't tell whether they got the role
-      // check or the password check wrong.
       return json({ error: "Forbidden" }, 403);
     }
 
-    // Both checks passed — read the waitlist via service role.
+    // Password OK — read the waitlist via service role.
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: signups, error: listErr } = await admin
       .from("waitlist_signups")
