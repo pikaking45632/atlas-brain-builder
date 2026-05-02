@@ -28,7 +28,7 @@ export function useWaitlistGate() {
   //   /join/:code  — invited users accepting their invitation
   //   /sign-in     — existing customers signing in to bypass the gate
   //   /sign-up     — invited users completing sign-up after clicking through /join
-  const ALWAYS_OPEN_PATHS = ["/join/", "/sign-in", "/sign-up"];
+  const ALWAYS_OPEN_PATHS = ["/join/", "/sign-in", "/sign-up", "/admin"];
   if (ALWAYS_OPEN_PATHS.some((p) => location.pathname.startsWith(p))) {
     return { showGate: false, loading: false };
   }
