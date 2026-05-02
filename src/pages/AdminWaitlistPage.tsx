@@ -27,7 +27,7 @@ type SortKey = "created_at" | "email" | "company_name";
 type SortDir = "asc" | "desc";
 
 export default function AdminWaitlistPage() {
-  const { user, workspace, initialized } = useAuth();
+  const { user, initialized } = useAuth();
   const [adminPassword, setAdminPassword] = useState<string | null>(null);
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(false);
@@ -109,18 +109,6 @@ export default function AdminWaitlistPage() {
         message="The admin area requires you to be signed in."
         ctaHref="/sign-in"
         ctaLabel="Sign in"
-      />
-    );
-  }
-
-  // Signed in but not an owner of any workspace
-  if (!workspace || workspace.role !== "owner") {
-    return (
-      <DeniedScreen
-        title="Owner access only"
-        message="The admin area is only available to workspace owners."
-        ctaHref="/app"
-        ctaLabel="Back to Atlas"
       />
     );
   }
